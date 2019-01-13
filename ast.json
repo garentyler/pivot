@@ -1,0 +1,53 @@
+[
+    {
+        "type": "Variable",
+        "value": "asdf",
+        "layer": 0
+    },
+    {
+        "type": "Operator",
+        "value": "=",
+        "layer": 0
+    },
+    {
+        "type": "Group",
+        "value": "a",
+        "tokens": [
+            {
+                "type": "Variable",
+                "value": "a",
+                "layer": 1
+            }
+        ],
+        "layer": 0
+    },
+    {
+        "type": "Left Delimiter",
+        "value": "{",
+        "layer": 0
+    },
+    {
+        "type": "Group",
+        "value": "a",
+        "tokens": [
+            {
+                "type": "Group",
+                "value": "a",
+                "tokens": [
+                    {
+                        "type": "Variable",
+                        "value": "a",
+                        "layer": 2
+                    },
+                    {
+                        "type": "Operator",
+                        "value": "++",
+                        "layer": 2
+                    }
+                ],
+                "layer": 1
+            }
+        ],
+        "layer": 0
+    }
+]
