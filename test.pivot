@@ -1,5 +1,6 @@
-x = 4
-y = 3 * x
-asdf = (a) {return(a++)}
-a = asdf(2)
-log(asdf(a(x,0)))
+// Example Pivot code.
+// This is a comment.
+x = 4 // This creates a variable x with the value of 4.
+y = 3 * x // This creates a variable y with the value of the output of (3 * x).
+asdf = (a) {return(a++)} // This creates a function asdf that takes a number and returns that number + 1/
+a = asdf(2) // This creates a variable a with the value of the output of asdf(2).

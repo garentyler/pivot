@@ -1,5 +1,10 @@
+// Import the token class.
 const token = require("./classes.js").token;
+
+// Create the tokenizer function.
+// tokenize() takes Pivot code in, and outputs an array of tokens.
 module.exports =  exp => {
+	// Check functions for different token types.
 	var isDigit = char => {
 		return /\d/.test(char);
 	};
@@ -21,16 +26,17 @@ module.exports =  exp => {
 	var isPeriod = char => {
 		return (char === ".");
 	};
-	var result = [];
-	var nb = [];
-	var lb = [];
-	var ob = [];
-	var sb = [];
-	var inString = false;
-	var stringType;
-	exp = exp.split("");
-	for (var i = 0; i < exp.length; i++) {
-		var char = exp[i];
+	var result = []; // The final array of tokens.
+	var nb = []; // Number buffer. Allows for multiple digits to be one number.
+	var lb = []; // Letter buffer. Allows for multiple letters to be one variable / function.
+	var ob = []; // Operator buffer. Allows for multi-character operators. E.g. ++ or ==.
+	var sb = []; // String buffer. Allows for multi-character strings.
+	var inString = false; // Keep track of whether in string or not.
+	var stringType; // Keep track of what type of string. E.g. "" or ''.
+	exp = exp.split(""); // Split the expression into an array of characters.
+	/* - - - DO NOT TOUCH THIS - - - */
+	for (var i = 0; i < exp.length; i++) { // Loop through all of the characters.
+		var char = exp[i]; // Create a quick reference to the current char.
 		if (i >= 1) {
 			if (exp[i - 1] == "\\") {
 				exp.splice(i - 1, 2, `\\${char}`);
@@ -44,6 +50,8 @@ module.exports =  exp => {
 			}
 		}
 	}
+	/* - - - OK YOU CAN TOUCH AGAIN - - - */
+	// Nevermind, just don't mess with any of this file.
 	for (var i = 0; i < exp.length; i++) {
 		var char = exp[i];
 		if (inString) {
