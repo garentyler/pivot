@@ -1,23 +1,15 @@
-# [Pivot][pivot-site]
+# [Pivot](https://gthub.us/pivot/)
 
-Pivot is a new programming language built on [JavaScript][javascript-site] by [ElementG9][elementg9-user]. Pivot is currently in the alpha stage of development.
+Pivot is a new programming language built on [JavaScript](https://javascript.com/) by [ElementG9](https://github.com/ElementG9/).
 
 ---
 
-### Installation
-* Download or clone [the GitHub repository][pivot-repo].
-* Download [node.js][nodejs-site].
+## Installation
+* Download or clone [the GitHub repository](/pivot/repo).
+* Download [node.js](https://nodejs.org/).
 * Run _pivot.js_ with `node pivot.js`.
 
 ---
 
-### Documentation
-
-The Pivot documentation is at [gthub.us/pivot/docs][pivot-docs].
-
-[elementg9-user]: https://github.com/ElementG9/
-[pivot-site]: https://gthub.us/pivot/
-[pivot-docs]: https://gthub.us/pivot/docs/
-[pivot-repo]: https://github.com/ElementG9/Pivot/
-[javascript-site]: https://javascript.com/
-[nodejs-site]: https://nodejs.org/
+## Documentation
+The Pivot documentation is [here](https://gthub.us/pivot/docs).
