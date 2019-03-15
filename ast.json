@@ -11,44 +11,39 @@
     },
     {
         "type": "Group",
-        "value": "{",
-        "tokens": [
-            {
-                "type": "Left Delimiter",
-                "value": "{",
-                "layer": 0
-            }
-        ]
-    },
-    {
-        "type": "Group",
-        "value": "a",
+        "value": "(",
         "tokens": [
             {
                 "type": "Variable",
                 "value": "a",
-                "layer": 2
-            },
-            {
-                "type": "Operator",
-                "value": "++",
-                "layer": 2
+                "layer": 1
             }
         ]
     },
     {
         "type": "Group",
-        "value": "asdf",
+        "value": "{",
         "tokens": [
             {
-                "type": "Variable",
-                "value": "asdf",
-                "layer": 0
+                "type": "Function Call",
+                "value": "return",
+                "layer": 1
             },
             {
-                "type": "Operator",
-                "value": "=",
-                "layer": 0
+                "type": "Group",
+                "value": "(",
+                "tokens": [
+                    {
+                        "type": "Variable",
+                        "value": "a",
+                        "layer": 2
+                    },
+                    {
+                        "type": "Operator",
+                        "value": "++",
+                        "layer": 2
+                    }
+                ]
             }
         ]
     }
