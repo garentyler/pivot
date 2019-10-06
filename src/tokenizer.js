@@ -5,7 +5,7 @@
  * @requires module:types
  */
 const Token = require('./types.js').Token;
-const Group = require('./types.js').Token;
+const Group = require('./types.js').Group;
 
 /**
  * @function tokenize
