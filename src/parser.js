@@ -23,41 +23,10 @@ function parse(tokens) {
   ast = addIndexes(ast);
   ast = addLevels(ast);
 
-  // Get the deepest level.
-  let deepestLevel = getDeepestLevel(ast);
+  // Combine the groups.
+  ast = combineGroups(ast);
 
-  // Loop through for each level.
-  for (let currentLevel = deepestLevel; currentLevel > 0; currentLevel--) {
-    console.log('looping for level ' + currentLevel);
-    let groupBuffer = [];
-    for (let j = 0; j < ast.length; j++) {
-      // Create previousLevel and nextLevel.
-      // let previousTokenLevel = 0;
-      // if (typeof ast[j-1] != 'undefined')
-      //   previousTokenLevel = ast[j-1].level;
-      let nextTokenLevel = 0;
-      if (typeof ast[j+1] != 'undefined')
-        nextTokenLevel = ast[j+1].level;
-
-      if (ast[j].level == currentLevel) {
-        groupBuffer.push(ast[j]); // Add the token to the groupBuffer.
-        if (ast[j].level > nextTokenLevel) {
-          let g = new Group(groupBuffer[0].value, groupBuffer);
-          g.index = g.tokens[0].index;
-          g.level = g.tokens[0].level - 1; // -1 because the group is on the level below.
-          ast.splice(g.tokens[0].index, g.tokens.length + 1, g);
-          j = g.tokens[0].index;
-          groupBuffer = [];
-        }
-      }
-
-      // // Take care of falling edges.
-      // if (ast[j].level > nextTokenLevel && ast[j].level == currentLevel) {
-      //   // The first item in the group is always a delimiter, steal info from that.
-      //   console.log(groupBuffer[0]);
-      // }
-    }
-  }
+  //
 
   return ast;
 }
@@ -103,7 +72,7 @@ function addLevels(tokens) {
 
 /**
  * @function getDeepestLevel
- * @desc Finds the deepest level.
+ * @desc Finds the deepest level of the ast.
  * @param {Token[]} tokens The tokens.
  * @returns {Number} The deepest level.
  * @private
@@ -114,12 +83,47 @@ function getDeepestLevel(tokens) {
   }, 0);
 }
 
+/**
+ * @function combineGroups
+ * @desc Combine groups of tokens by delimiter.
+ * @param {Token[]} tokens The tokens.
+ * @returns {Token[]} The grouped tokens, or the basic ast.
+ * @private
+ */
+function combineGroups(tokens) {
+  // Get the deepest level.
+  let deepestLevel = getDeepestLevel(tokens);
+
+  // Loop through for each level.
+  for (let currentLevel = deepestLevel; currentLevel > 0; currentLevel--) {
+    let groupBuffer = [];
+    for (let j = 0; j < tokens.length; j++) {
+      let nextTokenLevel = 0;
+      if (typeof tokens[j + 1] != 'undefined')
+        nextTokenLevel = tokens[j + 1].level;
+      if (tokens[j].level == currentLevel) {
+        groupBuffer.push(tokens[j]); // Add the token to the groupBuffer.
+        if (tokens[j].level > nextTokenLevel) {
+          let g = new Group(groupBuffer[0].value, groupBuffer);
+          g.index = g.tokens[0].index;
+          g.level = g.tokens[0].level - 1; // -1 because the group is on the level below.
+          tokens.splice(g.tokens[0].index, g.tokens.length + 1, g);
+          j = g.tokens[0].index;
+          groupBuffer = [];
+        }
+      }
+    }
+  }
+  return tokens;
+}
+
 module.exports = {
   parse,
   util: {
     addIndexes,
     addLevels,
-    getDeepestLevel
+    getDeepestLevel,
+    combineGroups
   }
 };
 
