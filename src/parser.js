@@ -22,12 +22,21 @@ function parse(tokens) {
   ast = addIndexes(ast);
   ast = addLevels(ast);
 
-  // Start grouping by precedence
+  // Start grouping by precedence.
+
+  // Precedence 16.
   ast = grouping(ast);
+  // Precedence 15.
   ast = memberAccess(ast);
+  ast = computedMemberAccess(ast);
+  ast = functionCall(ast);
+  // Precedence 14.
+  ast = keywords(ast);
+  ast = functionCreation(ast);
+  // Precedence 13.
+  // Precedence 12.
   ast = postfixOperators(ast);
   ast = prefixOperators(ast);
-  console.log(ast);
 
   return ast;
 }
@@ -123,13 +132,15 @@ function grouping(tokens) {
  * @function memberAccess
  * @desc Combine groups of tokens by member access.
  * @param {Token[]} tokens The tokens.
- * @returns {Token[]} The grouped tokens, or the basic ast.
+ * @returns {Token[]} The ast with grouped member access.
  * @private
  */
+// TODO: Member access
 function memberAccess(ast) {
+  console.log(ast);
   for (let i = 0; i < ast.length; i++) {
     if (ast[i].type == 'group')
-      memberAccess(ast[i].tokens); // Recursively order the groups.
+      ast[i].tokens = memberAccess(ast[i].tokens); // Recursively order the groups.
     else if (ast[i].type == 'operator' && ast[i].value == '.') { // Member access operator.
       if (typeof ast[i - 1] == 'undefined' || typeof ast[i + 1] == 'undefined')
         throw new SyntaxError('Operator requires two operands.');
@@ -138,6 +149,115 @@ function memberAccess(ast) {
       op.level = ast[i].level;
       ast.splice(i - 1, 3, op);
       i--; // Removed 3 tokens, put in 1, skip 1 token. Reduce the counter by 1.
+    }
+  }
+  return ast;
+}
+
+/**
+ * @function computedMemberAccess
+ * @desc Combine groups of tokens by computed member access.
+ * @param {Token[]} tokens The tokens.
+ * @returns {Token[]} The ast with grouped computed member access.
+ * @private
+ */
+function computedMemberAccess(ast) {
+  // Computed member access is Variable, Bracket Group.
+  for (let i = 0; i < ast.length; i++) {
+    if (ast[i].type == 'group')
+      ast[i].tokens = computedMemberAccess(ast[i].tokens); // Recursively order the groups.
+    else if (ast[i].type == 'name' && ast[i].subtype == 'variable') { // Member access operator.
+      if (typeof ast[i + 1] == 'undefined')
+        continue; // Nothing after the variable; skip this loop.
+      if (ast[i + 1].type == 'group' && ast[i + 1].subtype == 'bracket') {
+        ast[i + 1].tokens = computedMemberAccess(ast[i + 1].tokens); // Order the group that we care about before we mess with it.
+        let op = new Operator('n/a', 'member access', [ast[i], ast[i + 1]]);
+        op.index = ast[i].index;
+        op.level = ast[i].level;
+        ast.splice(i, 2, op);
+        // Removed 2 tokens, put in 1, skip 1 token. Don't reduce the counter.
+      } else continue; // Not what we need.
+    }
+  }
+  return ast;
+}
+
+/**
+ * @function functionCall
+ * @desc Combine groups of tokens by function calls.
+ * @param {Token[]} tokens The tokens.
+ * @returns {Token[]} The ast with grouped function calls.
+ * @private
+ */
+function functionCall(ast) {
+  // Function call is Variable, Parenthesis Group.
+  for (let i = 0; i < ast.length; i++) {
+    if (ast[i].type == 'group')
+      ast[i].tokens = functionCall(ast[i].tokens); // Recursively order the groups.
+    else if (ast[i].type == 'name' && ast[i].subtype == 'variable') { // Member access operator.
+      if (typeof ast[i + 1] == 'undefined')
+        continue; // Nothing after the variable; skip this loop.
+      if (ast[i + 1].type == 'group' && ast[i + 1].subtype == 'parenthesis') {
+        ast[i + 1].tokens = functionCall(ast[i + 1].tokens); // Order the group that we care about before we mess with it.
+        let op = new Operator('function call', ast[i].value, [ast[i], ast[i + 1]]);
+        op.index = ast[i].index;
+        op.level = ast[i].level;
+        ast.splice(i, 2, op);
+        // Removed 2 tokens, put in 1, skip 1 token. Don't reduce the counter.
+      } else continue; // Not what we need.
+    }
+  }
+  return ast;
+}
+
+/**
+ * @function keywords
+ * @desc Combine groups of tokens by keywords.
+ * @param {Token[]} tokens The tokens.
+ * @returns {Token[]} The ast with grouped keywords.
+ * @private
+ */
+function keywords(ast) {
+  for (let i = ast.length - 1; i >= 0; i--) { // Keywords are rtl associative, so loop backwards.
+    if (ast[i].type == 'group')
+      ast[i].tokens = keywords(ast[i].tokens); // Recursively order the groups.
+    else if (ast[i].type == 'name' && ast[i].subtype == 'keyword') {
+      if (typeof ast[i + 1] == 'undefined')
+        throw new SyntaxError('Keyword requires one operand after it.');
+      let key = new Operator('keyword', ast[i].value, [ast[i + 1]]);
+      key.level = ast[i].level;
+      key.index = ast[i].index;
+      ast.splice(i, 2, key);
+      // Looping backwards and didn't remove any items before the current one. Don't reduce the counter.
+    }
+  }
+  return ast;
+}
+
+/**
+ * @function functionCreation
+ * @desc Combine groups of tokens by function creation.
+ * @param {Token[]} tokens The tokens.
+ * @returns {Token[]} The ast with grouped function creation.
+ * @private
+ */
+function functionCreation(ast) {
+  // Function call is Parenthesis Group, Brace Group.
+  console.log(ast);
+  for (let i = 0; i < ast.length; i++) {
+    if (ast[i].type == 'group')
+      ast[i].tokens = functionCreation(ast[i].tokens); // Recursively order the groups.
+    else if (ast[i].type == 'group' && ast[i].subtype == 'parenthesis') {
+      if (typeof ast[i + 1] == 'undefined')
+        continue; // Nothing after this group, ignore it.
+      else if (ast[i + 1] == 'group' && ast[i].subtype == 'brace') {
+        ast[i + 1].tokens = functionCreation(ast[i + 1].tokens); // Order the group that we care about before we mess with it.
+        let op = new Operator('n/a', 'function creation', [ast[i], ast[i + 1]]);
+        op.index = ast[i].index;
+        op.level = ast[i].level;
+        ast.splice(i, 2, op);
+        // Removed 2 tokens, put in 1, skip 1 token. Don't reduce the counter.
+      } else continue;
     }
   }
   return ast;
@@ -181,7 +301,7 @@ function prefixOperators(ast) {
     if (ast[i].type == 'group')
       ast[i].tokens = postfixOperators(ast[i].tokens);
     else if (ast[i].type == 'operator' && ast[i].subtype == 'prefix') { // The operand is on the right.
-      if (typeof ast[i + 1] == 'undefined')
+      if (typeof ast[i - 1] == 'undefined')
         throw new SyntaxError('Prefix operator requires one operand after it.');
       let op = new Operator(ast[i].subtype, ast[i].value, [ast[i + 1]]);
       op.index = ast[i].index;

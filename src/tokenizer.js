@@ -327,7 +327,7 @@ function determineCharType(char) {
  * @private
  */
 function determineType(str) {
-  if (/let|return/.test(str))
+  if (/let|const|new|return/.test(str))
     return 'keyword';
   else return 'unknown';
 };

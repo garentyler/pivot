@@ -5,51 +5,52 @@ Operators in Pivot:
 +-------------+------------+----------------------------------+--------------------+-----------------+
 | Precedence  |  Operator  |  Description                     |  Operands          |  Associativity  |
 +-------------+------------+----------------------------------+--------------------+-----------------+
-|  16         |  ()        |  Grouping                        |  internal          |  n/a            |
+|  16         |  ()        |  Grouping                        |  internal          |  n/a            | grouping()
 +-------------+------------+----------------------------------+--------------------+-----------------+
-|  15         |  .         |  Member Access                   |  dual              |  Left to Right  |
-|  15         |  []        |  Computed Member Access          |  before, internal  |  Left to Right  |
-|  15         |  ()        |  Function Call                   |  before, internal  |  Left to Right  |
+|  15         |  .         |  Member Access                   |  dual              |  Left to Right  | memberAccess()
+|  15         |  []        |  Computed Member Access          |  before, internal  |  Left to Right  | computedMemberAccess()
+|  15         |  ()        |  Function Call                   |  before, internal  |  Left to Right  | functionCall()
 +-------------+------------+----------------------------------+--------------------+-----------------+
-|  14         |  let       |  Variable Creation               |  after             |  Right to Left  |
-|  14         |  const     |  Constant Creation               |  after             |  Right to Left  |
-|  14         |  new       |  Object Creation                 |  after             |  Right to Left  |
-|  14         |  () {}     |  Function Creation               |  internal          |  n/a            |
+|  14         |  let       |  Variable Creation               |  after             |  Right to Left  | keywords()
+|  14         |  const     |  Constant Creation               |  after             |  Right to Left  | keywords()
+|  14         |  new       |  Object Creation                 |  after             |  Right to Left  | keywords()
+|  14         |  return    |  Function Return                 |  after             |  n/a            | keywords()
+|  14         |  () {}     |  Function Creation               |  internal          |  n/a            | functionCreation()
 +-------------+------------+----------------------------------+--------------------+-----------------+
-|  13         |  ++        |  Postfix Increment               |  before            |  Left to Right  |
-|  13         |  --        |  Postfix Decrement               |  before            |  Left to Right  |
+|  13         |  ++        |  Postfix Increment               |  before            |  Left to Right  | postfixOperators()
+|  13         |  --        |  Postfix Decrement               |  before            |  Left to Right  | postfixOperators()
 +-------------+------------+----------------------------------+--------------------+-----------------+
-|  12         |  !         |  Logical NOT                     |  after             |  Right to Left  |
-|  12         |  -         |  Unary Negation                  |  after             |  Right to Left  |
+|  12         |  !         |  Logical NOT                     |  after             |  Right to Left  | prefixOperators()
+|  12         |  -         |  Unary Negation                  |  after             |  Right to Left  | prefixOperators()
 +-------------+------------+----------------------------------+--------------------+-----------------+
-|  11         |  **        |  Exponentiation                  |  dual              |  Right to Left  |
+|  11         |  **        |  Exponentiation                  |  dual              |  Right to Left  | mathOperators(0)
 +-------------+------------+----------------------------------+--------------------+-----------------+
-|  10         |  *         |  Multiplication                  |  dual              |  Left to Right  |
-|  10         |  /         |  Division                        |  dual              |  Left to Right  |
-|  10         |  %         |  Modulus                         |  dual              |  Left to Right  |
+|  10         |  *         |  Multiplication                  |  dual              |  Left to Right  | mathOperators(1)
+|  10         |  /         |  Division                        |  dual              |  Left to Right  | mathOperators(1)
+|  10         |  %         |  Modulus                         |  dual              |  Left to Right  | mathOperators(1)
 +-------------+------------+----------------------------------+--------------------+-----------------+
-|   9         |  +         |  Addition                        |  dual              |  Left to Right  |
-|   9         |  -         |  Subtraction                     |  dual              |  Left to Right  |
+|   9         |  +         |  Addition                        |  dual              |  Left to Right  | mathOperators(2)
+|   9         |  -         |  Subtraction                     |  dual              |  Left to Right  | mathOperators(2)
 +-------------+------------+----------------------------------+--------------------+-----------------+
-|   7         |  <         |  Less Than                       |  dual              |  Left to Right  |
-|   7         |  <=        |  Less Than or Equal              |  dual              |  Left to Right  |
-|   7         |  >         |  Greater Than                    |  dual              |  Left to Right  |
-|   7         |  >=        |  Greater Than or Equal           |  dual              |  Left to Right  |
+|   7         |  <         |  Less Than                       |  dual              |  Left to Right  | comparisonOperators()
+|   7         |  <=        |  Less Than or Equal              |  dual              |  Left to Right  | comparisonOperators()
+|   7         |  >         |  Greater Than                    |  dual              |  Left to Right  | comparisonOperators()
+|   7         |  >=        |  Greater Than or Equal           |  dual              |  Left to Right  | comparisonOperators()
 +-------------+------------+----------------------------------+--------------------+-----------------+
-|   6         |  ==        |  Equality                        |  dual              |  Left to Right  |
-|   6         |  !=        |  Inequality                      |  dual              |  Left to Right  |
+|   6         |  ==        |  Equality                        |  dual              |  Left to Right  | assign()
+|   6         |  !=        |  Inequality                      |  dual              |  Left to Right  | assign()
 +-------------+------------+----------------------------------+--------------------+-----------------+
-|   4         |  &&        |  Logical AND                     |  dual              |  Left to Right  |
-|   4         |  ^^        |  Logical XOR                     |  dual              |  Left to Right  |
-|   4         |  ||        |  Logical OR                      |  dual              |  Left to Right  |
+|   4         |  &&        |  Logical AND                     |  dual              |  Left to Right  | logicOperators()
+|   4         |  ^^        |  Logical XOR                     |  dual              |  Left to Right  | logicOperators()
+|   4         |  ||        |  Logical OR                      |  dual              |  Left to Right  | logicOperators()
 +-------------+------------+----------------------------------+--------------------+-----------------+
-|   3         |  =         |  Assignment                      |  dual              |  Right to Left  |
-|   3         |  +=        |  Add and Assign                  |  dual              |  Right to Left  |
-|   3         |  -=        |  Subtract and Assign             |  dual              |  Right to Left  |
-|   3         |  **=       |  Exponentiate and Assign         |  dual              |  Right to Left  |
-|   3         |  *=        |  Multiply and Assign             |  dual              |  Right to Left  |
-|   3         |  /=        |  Divide and Assign               |  dual              |  Right to Left  |
-|   3         |  %=        |  Modulo and Assign               |  dual              |  Right to Left  |
+|   3         |  =         |  Assignment                      |  dual              |  Right to Left  | opAssign()
+|   3         |  +=        |  Add and Assign                  |  dual              |  Right to Left  | opAssign()
+|   3         |  -=        |  Subtract and Assign             |  dual              |  Right to Left  | opAssign()
+|   3         |  **=       |  Exponentiate and Assign         |  dual              |  Right to Left  | opAssign()
+|   3         |  *=        |  Multiply and Assign             |  dual              |  Right to Left  | opAssign()
+|   3         |  /=        |  Divide and Assign               |  dual              |  Right to Left  | opAssign()
+|   3         |  %=        |  Modulo and Assign               |  dual              |  Right to Left  | opAssign()
 +-------------+------------+----------------------------------+--------------------+-----------------+
 |   2         |  ,         |  Comma                           |  none              |  Left to Right  |
 +-------------+------------+----------------------------------+--------------------+-----------------+
