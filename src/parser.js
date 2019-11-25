@@ -36,7 +36,20 @@ function parse(tokens) {
   ast = postfixOperators(ast);
   // Precedence 12.
   ast = prefixOperators(ast);
-
+  // Precedence 11.
+  ast = mathOperators(ast, 0); // Level 0 math operators: **.
+  // Precedence 10.
+  ast = mathOperators(ast, 1); // Level 1 math operators: *, /, %.
+  // Precedence 9.
+  ast = mathOperators(ast, 2); // Level 2 math operators: +, -.
+  // Precedence 7.
+  // ast = comparisonOperators(ast);
+  // Precedence 6.
+  // ast = assign(ast);
+  // Precedence 4.
+  // ast = logicOperators(ast);
+  // Precedence 3.
+  // ast = opAssign(ast);
   return ast;
 }
 
@@ -301,7 +314,7 @@ function postfixOperators(ast) {
  * @private
  */
 function prefixOperators(ast) {
-  for (let i = 0; i < ast.length; i++) {
+  for (let i = ast.length - 1; i >= 0; i--) { // Prefix operators are rtl associative, so loop backwards.
     // Take care of the tokens in the groups.
     if (ast[i].type == 'group') {
       if (ast[i].tokens.length > 0) {
@@ -320,6 +333,75 @@ function prefixOperators(ast) {
       op.level = ast[i].level;
       ast.splice(i, 2, op);
       // Removing 2 tokens, adding 1, skip 1 token. Don't reduce the counter.
+    }
+  }
+  return ast;
+}
+
+/**
+ * @function mathOperators
+ * @desc Recursively structures the math operators.
+ * @param {Token[]} ast The ast.
+ * @param {Token[]} level The level of math to do. (Order of operations)
+ * @returns {Token[]} The ast with structured math operators.
+ * @private
+ */
+function mathOperators(ast, level) {
+  if (level == 0) { // Level 0 operators: **
+    for (let i = ast.length - 1; i >= 0; i--) { // Exponentiation is rtl associative, so loop backwards.
+      // Take care of the tokens in the groups.
+      if (ast[i].type == 'group') {
+        if (ast[i].tokens.length > 0) {
+          ast[i].tokens = mathOperators(ast[i].tokens, level);
+        }
+      } else if (ast[i].type == 'operator') {
+        if (typeof ast[i].operands != 'undefined') {
+          ast[i].operands = mathOperators(ast[i].operands, level);
+        }
+      }
+      if (ast[i].type == 'operator' && ast[i].value == '**') {
+        if (typeof ast[i - 1] == 'undefined' || typeof ast[i + 1] == 'undefined')
+          throw new SyntaxError('Dual operator requires two operands.');
+        let op = new Operator('dual', ast[i].value, [ast[i - 1], ast[i + 1]]);
+        op.index = ast[i].index;
+        op.level = ast[i].level;
+        ast.splice(i - 1, 3, op);
+        i--;
+      }
+    }
+  } else {
+    for (let i = 0; i < ast.length; i++) { // All other math operators are ltr associative.
+      // Take care of the tokens in the groups.
+      if (ast[i].type == 'group') {
+        if (ast[i].tokens.length > 0) {
+          ast[i].tokens = mathOperators(ast[i].tokens, level);
+        }
+      } else if (ast[i].type == 'operator') {
+        if (typeof ast[i].operands != 'undefined') {
+          ast[i].operands = mathOperators(ast[i].operands, level);
+        }
+      }
+      if (level == 1) {
+        if (ast[i].type == 'operator' && (ast[i].value == '*' || ast[i].value == '/' || ast[i].value == '%')) {
+          if (typeof ast[i - 1] == 'undefined' || typeof ast[i + 1] == 'undefined')
+            throw new SyntaxError('Dual operator requires two operands.');
+          let op = new Operator('dual', ast[i].value, [ast[i - 1], ast[i + 1]]);
+          op.index = ast[i].index;
+          op.level = ast[i].level;
+          ast.splice(i - 1, 3, op);
+          i--;
+        }
+      } else if (level == 2) {
+        if (ast[i].type == 'operator' && (ast[i].value == '+' || ast[i].value == '-')) {
+          if (typeof ast[i - 1] == 'undefined' || typeof ast[i + 1] == 'undefined')
+            throw new SyntaxError('Dual operator requires two operands.');
+          let op = new Operator('dual', ast[i].value, [ast[i - 1], ast[i + 1]]);
+          op.index = ast[i].index;
+          op.level = ast[i].level;
+          ast.splice(i - 1, 3, op);
+          i--;
+        }
+      }
     }
   }
   return ast;
