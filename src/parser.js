@@ -23,7 +23,6 @@ function parse(tokens) {
   ast = addLevels(ast);
 
   // Start grouping by precedence.
-
   // Precedence 16.
   ast = grouping(ast);
   // Precedence 15.
@@ -103,24 +102,28 @@ function getDeepestLevel(tokens) {
 function grouping(tokens) {
   // Get the deepest level.
   let deepestLevel = getDeepestLevel(tokens);
-  // Loop through for each level.
+  let groupBuffer;
+  let opening;
+  // Group the deepest levels first.
   for (let currentLevel = deepestLevel; currentLevel > 0; currentLevel--) {
-    let groupBuffer = [];
-    for (let j = 0; j < tokens.length; j++) {
-      let nextTokenLevel = 0;
-      if (typeof tokens[j + 1] != 'undefined')
-        nextTokenLevel = tokens[j + 1].level;
-      if (tokens[j].level == currentLevel) {
-        groupBuffer.push(tokens[j]); // Add the token to the groupBuffer.
-        if (tokens[j].level > nextTokenLevel) {
+    groupBuffer = []; // Overwrite groupBuffer.
+    opening = null; // Overwrite opening.
+    for (let i = 0; i < tokens.length; i++) {
+      if (tokens[i].level == currentLevel) {
+        if (groupBuffer.length == 0)
+          opening = tokens[i];
+        groupBuffer.push(tokens[i]);
+        if (typeof tokens[i + 1] == 'undefined' || (tokens[i].type == 'delimiter' && tokens[i].subtype == 'right' && tokens[i].value == opening.value)) { // The end of the tokens.
           let g = new Group(groupBuffer[0].value, groupBuffer);
           g.index = g.tokens[0].index;
           g.level = g.tokens[0].level - 1; // -1 because the group is on the level below.
-          tokens.splice(g.tokens[0].index, g.tokens.length, g);
-          j = g.tokens[0].index;
-          // Remove the delimiters in g.tokens.
-          g.tokens = g.tokens.splice(1, groupBuffer.length - 2);
+          let length = g.tokens.length; // Keep track of how many tokens there are before removing the delimiters.
+          g.tokens = g.tokens.splice(1, g.tokens.length - 2); // Remove the delimiters in g.tokens.
+          i -= length - 1; // Reset the counter.
+          tokens.splice(i, length, g); // Replace the tokens with the new group.
+          // Reset groupBuffer and opening.
           groupBuffer = [];
+          opening = null;
         }
       }
     }
@@ -137,7 +140,6 @@ function grouping(tokens) {
  */
 // TODO: Member access
 function memberAccess(ast) {
-  console.log(ast);
   for (let i = 0; i < ast.length; i++) {
     if (ast[i].type == 'group')
       ast[i].tokens = memberAccess(ast[i].tokens); // Recursively order the groups.
@@ -243,7 +245,6 @@ function keywords(ast) {
  */
 function functionCreation(ast) {
   // Function call is Parenthesis Group, Brace Group.
-  console.log(ast);
   for (let i = 0; i < ast.length; i++) {
     if (ast[i].type == 'group')
       ast[i].tokens = functionCreation(ast[i].tokens); // Recursively order the groups.
