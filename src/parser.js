@@ -33,8 +33,8 @@ function parse(tokens) {
   ast = keywords(ast);
   ast = functionCreation(ast);
   // Precedence 13.
-  // Precedence 12.
   ast = postfixOperators(ast);
+  // Precedence 12.
   ast = prefixOperators(ast);
 
   return ast;
@@ -138,7 +138,6 @@ function grouping(tokens) {
  * @returns {Token[]} The ast with grouped member access.
  * @private
  */
-// TODO: Member access
 function memberAccess(ast) {
   for (let i = 0; i < ast.length; i++) {
     if (ast[i].type == 'group')
@@ -248,17 +247,15 @@ function functionCreation(ast) {
   for (let i = 0; i < ast.length; i++) {
     if (ast[i].type == 'group')
       ast[i].tokens = functionCreation(ast[i].tokens); // Recursively order the groups.
-    else if (ast[i].type == 'group' && ast[i].subtype == 'parenthesis') {
-      if (typeof ast[i + 1] == 'undefined')
-        continue; // Nothing after this group, ignore it.
-      else if (ast[i + 1] == 'group' && ast[i].subtype == 'brace') {
-        ast[i + 1].tokens = functionCreation(ast[i + 1].tokens); // Order the group that we care about before we mess with it.
-        let op = new Operator('n/a', 'function creation', [ast[i], ast[i + 1]]);
-        op.index = ast[i].index;
-        op.level = ast[i].level;
-        ast.splice(i, 2, op);
-        // Removed 2 tokens, put in 1, skip 1 token. Don't reduce the counter.
-      } else continue;
+    if (typeof ast[i + 1] == 'undefined')
+      continue; // Skip this loop.
+    if ((ast[i].type == 'group' && ast[i].subtype == 'parenthesis') && (ast[i + 1].type == 'group' && ast[i + 1].subtype == 'brace')) {
+      // Parenthesis group followed by brace group.
+      ast[i + 1].tokens = functionCreation(ast[i + 1].tokens); // Order the other group before we do anything.
+      let op = new Operator('function creation', 'n/a', [ast[i], ast[i + 1]]);
+      op.index = ast[i].index;
+      op.level = ast[i].level;
+      ast.splice(i, 2, op);
     }
   }
   return ast;
@@ -274,9 +271,16 @@ function functionCreation(ast) {
 function postfixOperators(ast) {
   for (let i = 0; i < ast.length; i++) {
     // Take care of the tokens in the groups.
-    if (ast[i].type == 'group')
-      ast[i].tokens = postfixOperators(ast[i].tokens);
-    else if (ast[i].type == 'operator' && ast[i].subtype == 'postfix') { // The operand is on the left.
+    if (ast[i].type == 'group') {
+      if (ast[i].tokens.length > 0) {
+        ast[i].tokens = postfixOperators(ast[i].tokens);
+      }
+    } else if (ast[i].type == 'operator') {
+      if (typeof ast[i].operands != 'undefined') {
+        ast[i].operands = postfixOperators(ast[i].operands);
+      }
+    }
+    if (ast[i].type == 'operator' && ast[i].subtype == 'postfix') { // The operand is on the left.
       if (typeof ast[i - 1] == 'undefined')
         throw new SyntaxError('Postfix operator requires one operand before it.');
       let op = new Operator(ast[i].subtype, ast[i].value, [ast[i - 1]]);
@@ -299,10 +303,17 @@ function postfixOperators(ast) {
 function prefixOperators(ast) {
   for (let i = 0; i < ast.length; i++) {
     // Take care of the tokens in the groups.
-    if (ast[i].type == 'group')
-      ast[i].tokens = postfixOperators(ast[i].tokens);
-    else if (ast[i].type == 'operator' && ast[i].subtype == 'prefix') { // The operand is on the right.
-      if (typeof ast[i - 1] == 'undefined')
+    if (ast[i].type == 'group') {
+      if (ast[i].tokens.length > 0) {
+        ast[i].tokens = prefixOperators(ast[i].tokens);
+      }
+    } else if (ast[i].type == 'operator') {
+      if (typeof ast[i].operands != 'undefined') {
+        ast[i].operands = prefixOperators(ast[i].operands);
+      }
+    }
+    if (ast[i].type == 'operator' && ast[i].subtype == 'prefix') { // The operand is on the right.
+      if (typeof ast[i + 1] == 'undefined')
         throw new SyntaxError('Prefix operator requires one operand after it.');
       let op = new Operator(ast[i].subtype, ast[i].value, [ast[i + 1]]);
       op.index = ast[i].index;
