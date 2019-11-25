@@ -13,6 +13,9 @@ describe('types.js', () => {
   it('Has a Group child.', () => {
     assert.equal(types.hasOwnProperty('Group'), true);
   });
+  it('Has a Operator child.', () => {
+    assert.equal(types.hasOwnProperty('Operator'), true);
+  });
 
   describe('Token', () => {
     it('Works as a constructor', () => {
@@ -54,6 +57,26 @@ describe('types.js', () => {
       }
     });
   });
+  // describe('Operator', () => {
+  //   it('Works as a constructor', () => {
+  //     try {
+  //       let op = new types.Operator('dual', '+', ['3','4']);
+  //     } catch (err) {
+  //       throw err;
+  //     }
+  //   });
+  //   it('Has values \'type\', \'subtype\', \'value\', and \'operands\'', () => {
+  //     try {
+  //       let op = new types.Operator('dual', '+', ['3','4']);
+  //       if (!op.hasOwnProperty('type') || !op.hasOwnProperty('subtype') || !op.hasOwnProperty('value') || !op.hasOwnProperty('operands'))
+  //         throw new Error('Operator is missing \'type\', \'subtype\', \'value\', or \'operands\' properties.');
+  //       if (op.type != 'operator' || op.subtype != 'dual' || op.value != '+' || op.operands[0] != '3')
+  //         throw new Error('Operator incorrectly set \'type\', \'subtype\', \'value\', or \'operands\' properties.');
+  //     } catch (err) {
+  //       throw err;
+  //     }
+  //   });
+  // });
 });
 describe('tokenizer.js', () => {
   it('combineEscapedChars works', () => {
@@ -101,7 +124,7 @@ describe('tokenizer.js', () => {
       throw new Error('Incorrect value: Expected \'parenthesis\' but got \'' + token.value + '\'')
   });
   it('operatorType works', () => {
-    assert.equal(tokenizer.util.operatorType('++'), 'left');
+    assert.equal(tokenizer.util.operatorType('++'), 'postfix');
     assert.equal(tokenizer.util.operatorType(';'), 'none');
     assert.equal(tokenizer.util.operatorType('+'), 'dual');
   });

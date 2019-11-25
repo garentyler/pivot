@@ -5,7 +5,6 @@
  * @requires module:types
  */
 const Token = require('./types.js').Token;
-const Group = require('./types.js').Group;
 
 /**
  * @function tokenize
@@ -234,21 +233,64 @@ function getDelimiterToken(delimiter) {
 
 /**
  * @function operatorType
- * @desc Determines the type of operator.
- * @param {string} operator The operator char.
- * @returns {string} The type of operator.
+ * @desc Turns a delimiter char into a token.
+ * @param {string} delimiter The delimiter char.
+ * @returns {Token} The delimiter token.
  * @private
  */
-function operatorType(operator) {
-  // Left operators have parameters on the left.
-  if (/\+\+|--/.test(operator))
-    return 'left';
-  else if (false)
-    return 'right';
-  else if (/\;/.test(operator))
-    return 'none';
-  else
-    return 'dual';
+function operatorType(op) {
+  switch (op) {
+    case '.':
+    case '+':
+    case '-':
+    case '*':
+    case '/':
+    case '**':
+    case '%':
+    case '<<':
+    case '>>':
+    case '<':
+    case '<=':
+    case '>':
+    case '>=':
+    case '==':
+    case '!=':
+    case '&':
+    case '|':
+    case '^':
+    case '&&':
+    case '||':
+    case '^^':
+    case '=':
+    case '+=':
+    case '-=':
+    case '*=':
+    case '/=':
+    case '**=':
+    case '%=':
+    case '<<=':
+    case '>>=':
+    case '&=':
+    case '|=':
+    case '^=':
+      return 'dual';
+      break;
+    case '++':
+    case '--':
+      return 'postfix';
+      break;
+    case '!':
+    case '~':
+      return 'prefix';
+      break;
+    case ',':
+    case ';':
+      return 'none';
+      break;
+    default:
+      throw new TypeError('Unexpected operator ' + op);
+      break;
+  }
 }
 
 /**
@@ -261,7 +303,8 @@ function operatorType(operator) {
 function determineCharType(char) {
   if (/[A-Za-z]/.test(char))
     return 'letter';
-  else if (/\+|\-|\*|\/|\=|\=\=|\>|\<|\>\=|\<\=|\=\>|;/.test(char))
+  else if (/\.|\+\+|--|!|~|\+|-|\*\*|\*|\/%|<<|>>|<|<=|>|>=|==|!=|&|\^|\||&&|\|\||=|\+=|-=|\*\*=|\*=|\/=|%=|<<=|>>=|&=|\^=|\|=|,|;/.test(char))
+    // All the operators in Pivot.
     return 'operator';
   else if (/\(|\)|\[|\]|\{|\}/.test(char))
     return 'delimiter';
@@ -273,7 +316,7 @@ function determineCharType(char) {
     return 'escaped char';
   else if (/\s/.test(char))
     return 'whitespace';
-  else throw new SyntaxError('Unexpected char ' + char);
+  else throw new TypeError('Unexpected char ' + char);
 };
 
 /**

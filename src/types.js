@@ -4,7 +4,6 @@
  * @author Garen Tyler <garentyler@gmail.com>
  */
 
-
 /**
  * @class Token
  * @classdesc Stores the type of token, subtype, and literal char value.
@@ -25,7 +24,19 @@ function Group(type, tokens) {
   this.tokens = tokens;
 }
 
+/**
+ * @class Operator
+ * @classdesc Stores the type of operator, and tokens for an operator.
+ */
+function Operator(subtype, value, operands) {
+  this.type = 'operator';
+  this.subtype = subtype;
+  this.value = value;
+  this.operands = operands;
+}
+
 module.exports = {
   Token,
-  Group
+  Group,
+  Operator
 };
