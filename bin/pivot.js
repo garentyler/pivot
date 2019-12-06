@@ -29,7 +29,8 @@ if (typeof args[0] != 'undefined') {
   };
   repl('> ', (answer) => {
     let jsAnswer = code.translate(parser.parse(tokenizer.tokenize(answer)), data);
+    data = jsAnswer.data;
     // console.log(require('util').inspect(jsAnswer, { depth: null }));
-    eval(jsAnswer);
+    eval(jsAnswer.code);
   });
 }

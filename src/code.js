@@ -30,7 +30,10 @@ function translate(ast, data) {
       out += temp;
     }
   }
-  return out;
+  return {
+    data,
+    code: out
+  };
 }
 
 module.exports = {
