@@ -1,6 +1,6 @@
 {
   "name": "pivot-lang",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Pivot is a new programming language built on JavaScript",
   "main": "./bin/pivot.js",
   "directories": {
@@ -35,6 +35,6 @@
     "readline-sync": "^1.4.10"
   },
   "devDependencies": {
-    "mocha": "^6.2.1"
+    "mocha": "^6.2.2"
   }
 }
