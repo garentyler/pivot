@@ -208,7 +208,8 @@ function functionCall(ast) {
   for (let i = 0; i < ast.length; i++) {
     if (ast[i].type == 'group')
       ast[i].tokens = functionCall(ast[i].tokens); // Recursively order the groups.
-    else if (ast[i].type == 'name' && ast[i].subtype == 'variable') { // Member access operator.
+    else if ((ast[i].type == 'name' && ast[i].subtype == 'variable') || // Normal function call
+      (ast[i].type == 'operator' && (ast[i].value == '.' || ast[i].value == 'member access'))) { // Function call in member access. Example: console.log()
       if (typeof ast[i + 1] == 'undefined')
         continue; // Nothing after the variable; skip this loop.
       if (ast[i + 1].type == 'group' && ast[i + 1].subtype == 'parenthesis') {
