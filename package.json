@@ -1,0 +1,40 @@
+{
+  "name": "pivot-lang",
+  "version": "0.2.0",
+  "description": "Pivot is a new programming language built on JavaScript",
+  "main": "./bin/pivot.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha",
+    "build": "npm run test; jsdoc src/ -r -d ./jsdoc/ -R ./readme.md"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ElementG9/Pivot.git"
+  },
+  "keywords": [
+    "pivot",
+    "javascript",
+    "programming",
+    "language"
+  ],
+  "author": "Garen Tyler <garentyler@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ElementG9/Pivot/issues"
+  },
+  "homepage": "https://github.com/ElementG9/Pivot#readme",
+  "bin": {
+    "pivot": "./bin/pivot.js"
+  },
+  "preferGlobal": true,
+  "dependencies": {
+    "fs": "0.0.1-security",
+    "readline-sync": "^1.4.10"
+  },
+  "devDependencies": {
+    "mocha": "^6.2.2"
+  }
+}
