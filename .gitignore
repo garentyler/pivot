@@ -1,5 +1,1 @@
-package-lock.json
-node_modules/
-jsdoc/
-ast.json
-target/
+/target
