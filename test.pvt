@@ -1,21 +1,19 @@
 // A comment
 
-/* A multi-line
-comment! */
+// An implicit int.
+log(2);
+// An explicit int.
+log(5i);
 
-/*
-A multi-line comment!
+// An implicit float.
+log(2.5);
+// An explicit float.
+log(3f);
 
-/*
-A nested multi-line comment!
-*/
+// Booleans and multiple arguments.
+log(true, false);
 
-*/
-
-log(2); // An implicit int.
-log(5i); // An explicit int.
-log(2.5); // An implicit float.
-log(3f); // An explicit float.
-log(true, false); // Logging two things in one log call, and booleans.
-log("Hello world!"); // A string literal.
-log("What's that over there?"); // A string showing how different delimiters layer.
+// Strings.
+log("Hello world!");
+// A string showing how different delimiters layer.
+log("What's that over there?");
