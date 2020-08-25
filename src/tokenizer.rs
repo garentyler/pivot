@@ -61,6 +61,43 @@ pub fn tokenize(source: &str) -> Vec<Token> {
                     });
                     current += 1;
                 }
+                '/' => {
+                    if chars.get(current + 1) == Some(&'/') {
+                        // A "// ..." comment.
+                        'comment: loop {
+                            if chars.get(current) == Some(&'\n') || chars.get(current) == None {
+                                break 'comment;
+                            }
+                            current += 1;
+                        }
+                    } else if chars.get(current + 1) == Some(&'*') {
+                        let mut depth = 1;
+                        'comment: loop {
+                            if chars.get(current) == Some(&'*')
+                                && chars.get(current + 1) == Some(&'/')
+                                && depth == 1
+                            {
+                                break 'comment;
+                            } else if chars.get(current) == None {
+                                break 'comment;
+                            } else {
+                                current += 1;
+                            }
+                        }
+                    // 'comment: loop {
+                    //     if (chars.get(current) == Some(&'/')
+                    //         && chars.get(current - 1) == Some(&'*'))
+                    //         || chars.get(current) == None
+                    //     {
+                    //         current += 1;
+                    //         break 'comment;
+                    //     }
+                    //     current += 1;
+                    // }
+                    } else {
+                        current += 1;
+                    }
+                }
                 _ => current += 1, // Just skip it if it's incorrect.
             }
         }
