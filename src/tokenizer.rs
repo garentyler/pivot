@@ -75,9 +75,16 @@ pub fn tokenize(source: &str) -> Vec<Token> {
                         'comment: loop {
                             if chars.get(current) == Some(&'*')
                                 && chars.get(current + 1) == Some(&'/')
-                                && depth == 1
                             {
-                                break 'comment;
+                                depth -= 1;
+                                if depth == 0 {
+                                    break 'comment;
+                                }
+                            }
+                            if chars.get(current) == Some(&'/')
+                                && chars.get(current + 1) == Some(&'*')
+                            {
+                                depth += 1;
                             } else if chars.get(current) == None {
                                 break 'comment;
                             } else {

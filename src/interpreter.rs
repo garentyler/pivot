@@ -16,7 +16,11 @@ pub fn interpret(ast: Program) {
                                     Literal::StringLiteral(s) => args.push(s),
                                     Literal::IntLiteral(i) => args.push(format!("{}i", i)),
                                     Literal::FloatLiteral(f) => {
-                                        args.push(format!("{}.{}f", f.trunc(), f.fract()))
+                                        if f.fract() == 0.0 {
+                                            args.push(format!("{}.0f", f));
+                                        } else {
+                                            args.push(format!("{}f", f));
+                                        }
                                     }
                                     Literal::BooleanLiteral(b) => args.push(format!("{}", b)),
                                 },
