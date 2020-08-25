@@ -4,6 +4,7 @@ pub enum TokenKind {
     StringLiteral,
     IntLiteral,
     FloatLiteral,
+    BooleanLiteral,
     LeftParen,
     RightParen,
     Semicolon,
@@ -77,8 +78,12 @@ fn read_identifier(chars: &Vec<char>, current: &mut usize, tokens: &mut Vec<Toke
             break;
         }
     }
+    let mut kind = TokenKind::Identifier;
+    if identifier == "true" || identifier == "false" {
+        kind = TokenKind::BooleanLiteral;
+    }
     tokens.push(Token {
-        kind: TokenKind::Identifier,
+        kind: kind,
         value: identifier,
         index: original_current,
     });

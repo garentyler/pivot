@@ -90,6 +90,15 @@ fn parse_expression(tokens: &Vec<Token>, current: &mut usize) -> Expression {
         let out = Expression::Literal(Literal::FloatLiteral(val));
         *current += 1;
         out
+    } else if tokens[*current].kind == TokenKind::BooleanLiteral {
+        let mut val = false;
+        if tokens[*current].value == "true" {
+            val = true;
+        } else if tokens[*current].value == "false" {
+            val = false;
+        }
+        *current += 1;
+        Expression::Literal(Literal::BooleanLiteral(val))
     } else {
         Expression::Null
     }
@@ -114,4 +123,5 @@ pub enum Literal {
     StringLiteral(String),
     IntLiteral(i32),
     FloatLiteral(f32),
+    BooleanLiteral(bool),
 }

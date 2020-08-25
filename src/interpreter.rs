@@ -18,6 +18,7 @@ pub fn interpret(ast: Program) {
                                     Literal::FloatLiteral(f) => {
                                         args.push(format!("{}.{}f", f.trunc(), f.fract()))
                                     }
+                                    Literal::BooleanLiteral(b) => args.push(format!("{}", b)),
                                 },
                                 Expression::Null => {
                                     args.push("null".to_owned());

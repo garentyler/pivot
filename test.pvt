@@ -1,3 +1,7 @@
+log(2);
 log(5i);
 log(3f);
 log(2.5);
+log(true, false);
+log("Hello world!");
+log('Goodbye cruel world!')
