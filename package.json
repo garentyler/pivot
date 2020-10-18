@@ -1,0 +1,20 @@
+{
+  "name": "pivot",
+  "version": "1.0.0",
+  "description": "A programming language",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "run": "deno run -c tsconfig.json --allow-read --allow-write --unstable src/index.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ElementG9/pivot.git"
+  },
+  "author": "Garen Tyler",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ElementG9/pivot/issues"
+  },
+  "homepage": "https://github.com/ElementG9/pivot#readme"
+}
