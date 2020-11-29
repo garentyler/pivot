@@ -1,7 +1,0 @@
-{
-  "compilerOptions": {
-    "strictNullChecks": false
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules"]
-}
