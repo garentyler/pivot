@@ -1,4 +1,5 @@
 fn main() {
-    let ast = pivot::parse::parse(r"log(2)");
+    let src = "log(2 + 4, variable)";
+    let ast = pivot::parse(src);
     println!("{}", ast);
 }

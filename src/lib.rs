@@ -6,3 +6,5 @@ extern crate regex;
 
 pub mod ast;
 pub mod parse;
+
+pub use parse::parse;

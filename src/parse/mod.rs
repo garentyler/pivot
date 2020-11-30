@@ -6,6 +6,9 @@ use ron::{from_str, to_string};
 
 pub fn parse<T: Into<String>>(src: T) -> AstNode {
     let src: String = src.into();
+    from_str::<AstNode>(&parse_expression(src).unwrap().0).unwrap()
+}
+fn parse_expression(src: String) -> Result<(String, String), String> {
     let whitespace = Parser::regex(r"[ \n\r\t]+");
     let comments = Parser::regex(r"[/][/].*").or(Parser::regex(r"[/][*].*[*][/]"));
     let ignored = whitespace.or(comments).repeat_range(0..usize::MAX);
@@ -68,7 +71,7 @@ pub fn parse<T: Into<String>>(src: T) -> AstNode {
         ))?)
     });
     // Expression parser.
-    let mut expression = Parser::constant("").map(|matched| Ok(to_string(&AstNode::null())?));
+    let expression = Parser::custom(parse_expression);
     // Call parser.
     let args = expression
         .clone()
@@ -78,7 +81,6 @@ pub fn parse<T: Into<String>>(src: T) -> AstNode {
                 .repeat_range(0..usize::MAX),
         )
         .map(|matched| {
-            println!("{}", matched);
             let mut args = vec![];
             let data = from_str::<Vec<String>>(&matched)?;
             args.push(data[0].clone());
@@ -97,11 +99,12 @@ pub fn parse<T: Into<String>>(src: T) -> AstNode {
             let data = from_str::<Vec<String>>(&matched)?;
             let callee = data[0].clone();
             let args = from_str::<Vec<String>>(&data[1])?;
-            for arg in args {
-                println!("{}", arg);
+            let mut ast_args = vec![];
+            for arg in &args {
+                ast_args.push(from_str::<AstNode>(arg)?);
             }
             Ok(to_string(
-                &AstNode::function_call(callee, vec![]), // TODO: recursively make into AstNodes
+                &AstNode::function_call(callee, ast_args),
             )?)
         });
     // Atom parser.
@@ -149,9 +152,5 @@ pub fn parse<T: Into<String>>(src: T) -> AstNode {
     let product = infix(STAR.clone().or(SLASH.clone()), unary.clone());
     let sum = infix(PLUS.clone().or(MINUS.clone()), product.clone());
     let comparison = infix(EQUAL.clone().or(NOT_EQUAL.clone()), sum.clone());
-    // Close the recursive definition.
-    // OR NOT! IT WORKS IN JS BECAUSE IT GETS HOISTED
-    expression = comparison.clone();
-    from_str::<AstNode>(&expression.parse(src).unwrap().0).unwrap()
-    // AstNode::block(vec![])
+    comparison.parse(src)
 }

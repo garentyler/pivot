@@ -14,6 +14,7 @@ pub enum ParserKind {
     RepeatRange(Range<usize>),
     Error(String),
     Map(Rc<Box<dyn Fn(String) -> Result<String, ron::Error>>>),
+    Custom(Rc<Box<dyn Fn(String) -> Result<(String, String), String>>>),
 }
 impl std::fmt::Debug for ParserKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -34,6 +35,7 @@ impl std::fmt::Display for ParserKind {
             RepeatRange(range) => write!(f, "RepeatRange {:?}", range),
             Error(msg) => write!(f, "Error \"{}\"", msg),
             Map(_) => write!(f, "Map"),
+            Custom(_) => write!(f, "Custom"),
         }
     }
 }
@@ -51,6 +53,7 @@ impl Clone for ParserKind {
             RepeatRange(range) => RepeatRange(range.clone()),
             Error(msg) => Error(msg.clone()),
             Map(cfn) => Map(Rc::clone(cfn)),
+            Custom(cfn) => Custom(Rc::clone(cfn)),
         }
     }
 }
@@ -162,6 +165,9 @@ impl Parser {
                     Err(rest)
                 }
             }
+            Custom(cfn) => {
+                cfn(s)
+            }
         }
     }
 
@@ -187,6 +193,15 @@ impl Parser {
     pub fn error<T: Into<String>>(s: T) -> Parser {
         Parser {
             kind: ParserKind::Error(s.into()),
+            subparsers: vec![],
+        }
+    }
+    pub fn custom<F: 'static>(cfn: F) -> Parser
+    where
+        F: Fn(String) -> Result<(String, String), String>,
+    {
+        Parser {
+            kind: ParserKind::Custom(Rc::new(Box::new(cfn))),
             subparsers: vec![],
         }
     }
