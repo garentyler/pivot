@@ -9,3 +9,5 @@ edition = "2018"
 [dependencies]
 regex = "1.4.1"
 nom = "5.1.2"
+ron = "0.6.2"
+serde = "1.0.117"

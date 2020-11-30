@@ -1,4 +1,5 @@
-#[derive(Clone, Debug, PartialEq)]
+use serde::{Deserialize, Serialize};
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum AstNodeKind {
     // Primitives
     Integer,
@@ -23,20 +24,22 @@ pub enum AstNodeKind {
     FunctionDefinition,
     VariableDefinition,
     Assign,
+    // Blank node
+    Null,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AstNode {
     pub kind: AstNodeKind,
     pub value: String,
-    pub subnodes: Vec<AstNode>
+    pub subnodes: Vec<AstNode>,
 }
 impl AstNode {
     pub fn new(kind: AstNodeKind, value: String, subnodes: Vec<AstNode>) -> AstNode {
         AstNode {
             kind,
             value,
-            subnodes
+            subnodes,
         }
     }
     pub fn emit(&self, f: &mut dyn std::fmt::Write) -> std::fmt::Result {
@@ -51,11 +54,11 @@ impl AstNode {
             Program => {
                 write!(f, "(module\n")?;
                 for node in &self.subnodes {
-                    node.emit(f);
+                    node.emit(f)?;
                 }
                 write!(f, ")")
             }
-            _ => Ok(())
+            _ => Ok(()),
         }
     }
 
@@ -87,42 +90,42 @@ impl AstNode {
         AstNode {
             kind: AstNodeKind::NotEqual,
             value: "not_equal".into(),
-            subnodes: vec![left, right]
+            subnodes: vec![left, right],
         }
     }
     pub fn equal(left: AstNode, right: AstNode) -> AstNode {
         AstNode {
             kind: AstNodeKind::Equal,
             value: "equal".into(),
-            subnodes: vec![left, right]
+            subnodes: vec![left, right],
         }
     }
     pub fn add(left: AstNode, right: AstNode) -> AstNode {
         AstNode {
             kind: AstNodeKind::Add,
             value: "add".into(),
-            subnodes: vec![left, right]
+            subnodes: vec![left, right],
         }
     }
     pub fn subtract(left: AstNode, right: AstNode) -> AstNode {
         AstNode {
             kind: AstNodeKind::Subtract,
             value: "subtract".into(),
-            subnodes: vec![left, right]
+            subnodes: vec![left, right],
         }
     }
     pub fn multiply(left: AstNode, right: AstNode) -> AstNode {
         AstNode {
             kind: AstNodeKind::Multiply,
             value: "multiply".into(),
-            subnodes: vec![left, right]
+            subnodes: vec![left, right],
         }
     }
     pub fn divide(left: AstNode, right: AstNode) -> AstNode {
         AstNode {
             kind: AstNodeKind::Divide,
             value: "divide".into(),
-            subnodes: vec![left, right]
+            subnodes: vec![left, right],
         }
     }
     // Control flow
@@ -130,14 +133,18 @@ impl AstNode {
         AstNode {
             kind: AstNodeKind::Block,
             value: "block".into(),
-            subnodes: statements
+            subnodes: statements,
         }
     }
-    pub fn if_statement(conditional: AstNode, consequence: AstNode, alternative: AstNode) -> AstNode {
+    pub fn if_statement(
+        conditional: AstNode,
+        consequence: AstNode,
+        alternative: AstNode,
+    ) -> AstNode {
         AstNode {
             kind: AstNodeKind::IfStatement,
             value: "if_statement".into(),
-            subnodes: vec![conditional, consequence, alternative]
+            subnodes: vec![conditional, consequence, alternative],
         }
     }
     pub fn while_loop(conditional: AstNode, body: AstNode) -> AstNode {
@@ -151,7 +158,7 @@ impl AstNode {
         AstNode {
             kind: AstNodeKind::Program,
             value: "program".into(),
-            subnodes: statements
+            subnodes: statements,
         }
     }
     // Functions and variables
@@ -193,5 +200,52 @@ impl AstNode {
             value: name,
             subnodes: vec![value],
         }
+    }
+    // Blank node
+    pub fn null() -> AstNode {
+        AstNode {
+            kind: AstNodeKind::Null,
+            value: "".into(),
+            subnodes: vec![],
+        }
+    }
+
+    // Other
+    pub fn pretty_print(&self, f: &mut std::fmt::Formatter<'_>, indent: usize) -> std::fmt::Result {
+        for _ in 0..indent {
+            write!(f, " ")?;
+        }
+        write!(f, "{{\n")?;
+        for _ in 0..indent + 2 {
+            write!(f, " ")?;
+        }
+        write!(f, "kind: {:?}\n", self.kind)?;
+        for _ in 0..indent + 2 {
+            write!(f, " ")?;
+        }
+        write!(f, "value: {:?}\n", self.value)?;
+        if self.subnodes.len() > 0 {
+            for _ in 0..indent + 2 {
+                write!(f, " ")?;
+            }
+            write!(f, "subnodes: [\n")?;
+            for subnode in &self.subnodes {
+                subnode.pretty_print(f, indent + 4)?;
+                write!(f, ",\n")?;
+            }
+            for _ in 0..indent + 2 {
+                write!(f, " ")?;
+            }
+            write!(f, "]\n")?;
+        }
+        for _ in 0..indent {
+            write!(f, " ")?;
+        }
+        write!(f, "}}")
+    }
+}
+impl std::fmt::Display for AstNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.pretty_print(f, 0)
     }
 }
