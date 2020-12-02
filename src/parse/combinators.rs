@@ -8,7 +8,7 @@ pub enum ParserKind {
     Regex(Regex),
     Constant(String),
     And,
-    Ignore(bool),
+    Ignore,
     Or,
     Repeat(usize),
     RepeatRange(Range<usize>),
@@ -29,7 +29,7 @@ impl std::fmt::Display for ParserKind {
             Regex(r) => write!(f, "Regex /{}/", r.as_str()),
             Constant(c) => write!(f, "Constant \"{}\"", c),
             And => write!(f, "And"),
-            Ignore(b) => write!(f, "Ignore{}", if *b { "Before" } else { "After" }),
+            Ignore => write!(f, "Ignore"),
             Or => write!(f, "Or"),
             Repeat(num) => write!(f, "Repeat {}", num),
             RepeatRange(range) => write!(f, "RepeatRange {:?}", range),
@@ -47,7 +47,7 @@ impl Clone for ParserKind {
             Regex(r) => Regex(r.clone()),
             Constant(c) => Constant(c.clone()),
             And => And,
-            Ignore(b) => Ignore(*b),
+            Ignore => Ignore,
             Or => Or,
             Repeat(num) => Repeat(num.clone()),
             RepeatRange(range) => RepeatRange(range.clone()),
@@ -55,6 +55,11 @@ impl Clone for ParserKind {
             Map(cfn) => Map(Rc::clone(cfn)),
             Custom(cfn) => Custom(Rc::clone(cfn)),
         }
+    }
+}
+impl PartialEq for ParserKind {
+    fn eq(&self, other: &ParserKind) -> bool {
+        format!("{}", self) == format!("{}", other)
     }
 }
 
@@ -96,22 +101,30 @@ impl Parser {
             }
             Constant(constant) => Ok((constant.clone(), s)),
             And => {
-                let (lmatched, lrest) = self.subparsers[0].parse(s)?;
-                let (rmatched, rrest) = self.subparsers[1].parse(lrest)?;
-                Ok((
-                    to_string(&vec![lmatched.clone(), rmatched.clone()]).unwrap(),
-                    rrest,
-                ))
-            }
-            Ignore(before) => {
-                if *before {
+                if self.subparsers[0].kind == Ignore
+                    && self.subparsers[1].kind == Ignore {
+                    Ok(("".into(), s))
+                } else if self.subparsers[0].kind == Ignore {
                     let (_, rest) = self.subparsers[0].parse(s)?;
                     self.subparsers[1].parse(rest)
+                } else if self.subparsers[1].kind == Ignore {
+                    let (matched, lrest) = self.subparsers[0].parse(s.clone())?;
+                    if let Ok((_, rest)) = self.subparsers[1].parse(lrest) {
+                        Ok((matched, rest))
+                    } else {
+                        Err(s)
+                    }
                 } else {
-                    let (matched, rest) = self.subparsers[0].parse(s)?;
-                    let (_, rest) = self.subparsers[1].parse(rest)?;
-                    Ok((matched, rest))
+                    let (lmatched, lrest) = self.subparsers[0].parse(s)?;
+                    let (rmatched, rrest) = self.subparsers[1].parse(lrest)?;
+                    Ok((
+                        to_string(&vec![lmatched.clone(), rmatched.clone()]).unwrap(),
+                        rrest,
+                    ))
                 }
+            }
+            Ignore => {
+                self.subparsers[0].parse(s)
             }
             Or => {
                 if let Ok(lresult) = self.subparsers[0].parse(s.clone()) {
@@ -213,16 +226,10 @@ impl Parser {
             subparsers: vec![self, r],
         }
     }
-    pub fn ignore_before(self, r: Parser) -> Parser {
+    pub fn ignore(self) -> Parser {
         Parser {
-            kind: ParserKind::Ignore(true),
-            subparsers: vec![self, r],
-        }
-    }
-    pub fn ignore_after(self, r: Parser) -> Parser {
-        Parser {
-            kind: ParserKind::Ignore(false),
-            subparsers: vec![self, r],
+            kind: ParserKind::Ignore,
+            subparsers: vec![self],
         }
     }
     pub fn or(self, r: Parser) -> Parser {

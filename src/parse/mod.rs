@@ -14,7 +14,7 @@ fn parse_expression(src: String) -> Result<(String, String), String> {
     let ignored = whitespace.or(comments).repeat_range(0..usize::MAX);
     // Token parser constructor.
     let i = ignored.clone();
-    let token = move |pattern: &str| i.clone().ignore_before(Parser::regex(pattern));
+    let token = move |pattern: &str| i.clone().ignore().and(Parser::regex(pattern));
     // Token helper parsers.
     let FUNCTION = Parser::regex(r"function\b").or(ignored.clone());
     let IF = token(r"if\b");
@@ -73,11 +73,10 @@ fn parse_expression(src: String) -> Result<(String, String), String> {
     // Expression parser.
     let expression = Parser::custom(parse_expression);
     // Call parser.
-    let args = expression
-        .clone()
+    let args = expression.clone()
         .and(
-            COMMA
-                .ignore_before(expression.clone())
+            COMMA.clone().ignore()
+                .and(expression.clone())
                 .repeat_range(0..usize::MAX),
         )
         .map(|matched| {
@@ -90,11 +89,10 @@ fn parse_expression(src: String) -> Result<(String, String), String> {
             }
             Ok(to_string(&args)?)
         });
-    let call = IDENTIFIER
-        .clone()
-        .ignore_after(LEFT_PAREN.clone())
+    let call = IDENTIFIER.clone()
+        .and(LEFT_PAREN.clone().ignore())
         .and(args.clone())
-        .ignore_after(RIGHT_PAREN.clone())
+        .and(RIGHT_PAREN.clone().ignore())
         .map(|matched| {
             let data = from_str::<Vec<String>>(&matched)?;
             let callee = data[0].clone();
@@ -112,10 +110,11 @@ fn parse_expression(src: String) -> Result<(String, String), String> {
         .clone()
         .or(IDENTIFIER.clone())
         .or(NUMBER.clone())
-        .or(LEFT_PAREN
-            .clone()
-            .ignore_before(expression.clone())
-            .ignore_after(RIGHT_PAREN.clone()));
+        .or(
+            LEFT_PAREN.clone().ignore()
+                .and(expression.clone())
+                .and(RIGHT_PAREN.clone().ignore())
+        );
     // Unary operator parsers.
     let unary = NOT.clone().optional().and(atom.clone()).map(|matched| {
         let data = from_str::<Vec<String>>(&matched)?;
