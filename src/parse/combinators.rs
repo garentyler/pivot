@@ -124,7 +124,7 @@ impl Parser {
                 }
             }
             Ignore => {
-                self.subparsers[0].parse(s)
+                Ok(("".into(), self.subparsers[0].parse(s)?.1))
             }
             Or => {
                 if let Ok(lresult) = self.subparsers[0].parse(s.clone()) {
