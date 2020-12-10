@@ -45,19 +45,44 @@ impl AstNode {
     pub fn emit(&self, f: &mut dyn std::fmt::Write) -> std::fmt::Result {
         use AstNodeKind::*;
         match self.kind {
-            Integer => write!(f, "i64.const {}\n", self.value),
+            Integer => write!(f, "i32.const {}\n", self.value),
+            Identifier => write!(f, "get_local ${}\n", self.value),
             Add => {
                 self.subnodes[0].emit(f)?;
                 self.subnodes[1].emit(f)?;
-                write!(f, "i64.add\n")
+                write!(f, "i32.add\n")
             }
             Program => {
                 write!(f, "(module\n")?;
+                let mut exported = vec![];
                 for node in &self.subnodes {
                     node.emit(f)?;
+                    if node.kind == FunctionDefinition {
+                        exported.push(node.value.clone());
+                    }
+                }
+                for export in exported {
+                    write!(f, "(export \"{0}\" (func ${0}))\n", export)?;
                 }
                 write!(f, ")")
             }
+            FunctionDefinition => {
+                write!(f, "(func ${}", self.value)?;
+                // let body = self.subnodes[0];
+                for a in &self.subnodes[1..] {
+                    write!(f, " (param ${} i32)", a.value)?;
+                }
+                write!(f, " (result i32)\n")?;
+                self.subnodes[0].emit(f)?;
+                write!(f, ")\n")
+            }
+            Block => {
+                for node in &self.subnodes {
+                    node.emit(f)?;
+                }
+                write!(f, "")
+            }
+            FunctionReturn => self.subnodes[0].emit(f),
             _ => Ok(()),
         }
     }

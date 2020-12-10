@@ -153,21 +153,35 @@ fn parse_statement(src: String) -> Result<(String, String), String> {
         .and(IDENTIFIER.clone())
         .and(
             LEFT_PAREN.clone().ignore()
-            .and(args.clone())
+            .and(args.clone().optional())
             .and(RIGHT_PAREN.clone().ignore())
         )
         .and(block_statement.clone())
         .map(|matched| {
             let data = from_str::<Vec<String>>(&matched)?;
+            for d in &data {
+                println!("{}", d);
+            }
             let body = from_str::<AstNode>(&data[1])?;
+            println!("body: {}", body);
             let data = from_str::<Vec<String>>(&data[0])?;
+            for d in &data {
+                println!("{}", d);
+            }
             let name = from_str::<AstNode>(&data[0])?.value;
+            println!("name: {}", name);
             let params = from_str::<Vec<String>>(&data[1])?;
             let mut parameters = vec![];
-            for p in params {
+            for p in from_str::<Vec<String>>(&params[0])? {
                 parameters.push(from_str::<AstNode>(&p)?);
             }
+            println!("{:?}", parameters);
             Ok(to_string(&AstNode::function_definition(name, parameters, body))?)
+        })
+        .map(|matched| {
+            let function_definition = from_str::<AstNode>(&matched)?;
+            println!("{}", function_definition);
+            Ok(matched)
         });
     return_statement.clone()
         .or(if_statement.clone())
