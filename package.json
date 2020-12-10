@@ -1,0 +1,26 @@
+{
+  "name": "pivot",
+  "version": "1.0.0",
+  "description": "Pivot is a new programming language built with Rust by Garen Tyler. Pivot is currently in the alpha stage of development.",
+  "main": "test.js",
+  "dependencies": {
+    "webassembly": "^0.11.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "clean": "cargo clean && rm -rf node_modules out.wasm",
+    "build": "cargo build",
+    "run": "cargo run && node test.js",
+    "test": "cargo test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ElementG9/pivot.git"
+  },
+  "author": "Garen Tyler",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ElementG9/pivot/issues"
+  },
+  "homepage": "https://github.com/ElementG9/pivot#readme"
+}
