@@ -1,4 +1,6 @@
 use serde::{Deserialize, Serialize};
+use ron::from_str;
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum AstNodeKind {
     // Primitives
@@ -23,6 +25,7 @@ pub enum AstNodeKind {
     FunctionReturn,
     FunctionDefinition,
     VariableDefinition,
+    VariableDeclaration,
     Assign,
     // Blank node
     Null,
@@ -42,48 +45,112 @@ impl AstNode {
             subnodes,
         }
     }
-    pub fn emit(&self, f: &mut dyn std::fmt::Write) -> std::fmt::Result {
+    pub fn emit(&self) -> String {
         use AstNodeKind::*;
         match self.kind {
-            Integer => write!(f, "i32.const {}\n", self.value),
-            Identifier => write!(f, "get_local ${}\n", self.value),
-            Add => {
-                self.subnodes[0].emit(f)?;
-                self.subnodes[1].emit(f)?;
-                write!(f, "i32.add\n")
+            // Primitives
+            Integer => format!("(i32.const {})", self.value),
+            Identifier => format!("(get_local ${})", self.value),
+            // Unary operators
+            Not => format!("(i32.eq (i32.const 0) {})", self.subnodes[1].emit()),
+            // Infix operators
+            NotEqual => format!("(i32.ne {} {})", self.subnodes[0].emit(), self.subnodes[1].emit()),
+            Equal => format!("(i32.eq {} {})", self.subnodes[0].emit(), self.subnodes[1].emit()),
+            Add => format!("(i32.add {} {})", self.subnodes[0].emit(), self.subnodes[1].emit()),
+            Subtract => format!("(i32.sub {} {})", self.subnodes[0].emit(), self.subnodes[1].emit()),
+            Multiply => format!("(i32.mul {} {})", self.subnodes[0].emit(), self.subnodes[1].emit()),
+            Divide => format!("(i32.div_s {} {})", self.subnodes[0].emit(), self.subnodes[1].emit()),
+            // Control flow
+            Block => {
+                let mut out = String::new();
+                for node in &self.subnodes {
+                    out += "";
+                    out += &node.emit();
+                }
+                out
+            }
+            IfStatement => {
+                let mut out = String::new();
+                out += &format!("(if {} (then {})", self.subnodes[0].emit(), self.subnodes[1].emit()); // Emit the conditional and consequence.
+                if let Some(alternative) = self.subnodes.get(2) {
+                    out += &format!(" (else {})", alternative.emit()); // Emit the alternative.
+                }
+                out += ")";
+                out
+            }
+            WhileLoop => {
+                let loop_symbol = "while_loop"; // TODO: Make generate unique symbol for nested loops.
+                let mut out = String::new();
+                out += &format!("(block ${}_wrapper", loop_symbol);
+                out += &format!(" (loop ${}_loop", loop_symbol);
+                out += &format!(" {}", self.subnodes[1].emit());
+                out += &format!(" (br_if ${}_wrapper (i32.eq (i32.const 0) {}))", loop_symbol, self.subnodes[0].emit());
+                out += &format!(" (br ${}_loop)", loop_symbol);
+                out += "))";
+                out
             }
             Program => {
-                write!(f, "(module\n")?;
+                let mut out = String::new();
+                out += "(module";
                 let mut exported = vec![];
                 for node in &self.subnodes {
-                    node.emit(f)?;
+                    out += " ";
+                    out += &node.emit();
                     if node.kind == FunctionDefinition {
                         exported.push(node.value.clone());
                     }
                 }
                 for export in exported {
-                    write!(f, "(export \"{0}\" (func ${0}))\n", export)?;
+                    out += &format!(" (export \"{0}\" (func ${0}))", export);
                 }
-                write!(f, ")")
+                out += ")";
+                out
             }
+            // Functions and variables
+            FunctionCall => {
+                let mut out = String::new();
+                out += &format!("(call ${}", from_str::<AstNode>(&self.value).unwrap().value);
+                for n in &self.subnodes {
+                    out += " ";
+                    out += &n.emit();
+                }
+                out += ")";
+                out
+            },
+            FunctionReturn => format!("{} (return)", self.subnodes[0].emit()),
             FunctionDefinition => {
-                write!(f, "(func ${}", self.value)?;
-                // let body = self.subnodes[0];
-                for a in &self.subnodes[1..] {
-                    write!(f, " (param ${} i32)", a.value)?;
+                let mut out = String::new();
+                out += &format!("(func ${}", self.value);
+                let body = self.subnodes[0].clone();
+                for n in &self.subnodes[1..] {
+                    out += &format!(" (param ${} i32)", n.value);
                 }
-                write!(f, " (result i32)\n")?;
-                self.subnodes[0].emit(f)?;
-                write!(f, ")\n")
-            }
-            Block => {
-                for node in &self.subnodes {
-                    node.emit(f)?;
+                let mut func_returns_value = false;
+                let mut index = 0;
+                loop {
+                    if index >= body.subnodes.len() {
+                        break;
+                    }
+                    match body.subnodes[index].kind {
+                        AstNodeKind::FunctionReturn => func_returns_value = true,
+                        _ => {}
+                    }
+                    index += 1;
                 }
-                write!(f, "")
+                if func_returns_value {
+                    out += " (result i32)";
+                }
+                for n in &body.subnodes {
+                    out += " ";
+                    out += &n.emit();
+                }
+                out += ")";
+                out
             }
-            FunctionReturn => self.subnodes[0].emit(f),
-            _ => Ok(()),
+            VariableDeclaration => format!("(local ${} i32)", self.value),
+            Assign => format!("(set_local ${} {})", self.value, self.subnodes[0].emit()),
+            // Blank node / other
+            Null | _ => "".into(),
         }
     }
 
@@ -217,6 +284,13 @@ impl AstNode {
             kind: AstNodeKind::VariableDefinition,
             value: name,
             subnodes: vec![value],
+        }
+    }
+    pub fn variable_declaration(name: String) -> AstNode {
+        AstNode {
+            kind: AstNodeKind::VariableDeclaration,
+            value: name,
+            subnodes: vec![],
         }
     }
     pub fn assign(name: String, value: AstNode) -> AstNode {

@@ -1,15 +1,22 @@
 mod combinators;
 
-use crate::ast::AstNode;
+use crate::ast::{AstNode, AstNodeKind};
 use combinators::Parser;
 use ron::{from_str, to_string};
 
 pub fn parse<T: Into<String>>(src: T) -> AstNode {
     let src: String = src.into();
-    let parse_program = Parser::custom(parse_statement)
+    let whitespace = Parser::regex(r"[ \n\r\t]+");
+    let comments = Parser::regex(r"[/][/].*").or(Parser::regex(r"[/][*].*[*][/]"));
+    let ignored = whitespace.or(comments).repeat_range(0..usize::MAX);
+    let statement = ignored.optional().ignore().and(Parser::custom(parse_statement));
+    let parse_program = statement.clone()
         .repeat_range(0..usize::MAX)
         .map(|matched| {
             let data = from_str::<Vec<String>>(&matched)?;
+            for d in &data {
+                println!("{}", d);
+            }
             let mut statements = vec![];
             for d in data {
                 statements.push(from_str::<AstNode>(&d)?);
@@ -159,29 +166,31 @@ fn parse_statement(src: String) -> Result<(String, String), String> {
         .and(block_statement.clone())
         .map(|matched| {
             let data = from_str::<Vec<String>>(&matched)?;
-            for d in &data {
-                println!("{}", d);
-            }
-            let body = from_str::<AstNode>(&data[1])?;
-            println!("body: {}", body);
+            let mut body = from_str::<AstNode>(&data[1])?;
             let data = from_str::<Vec<String>>(&data[0])?;
-            for d in &data {
-                println!("{}", d);
-            }
             let name = from_str::<AstNode>(&data[0])?.value;
-            println!("name: {}", name);
             let params = from_str::<Vec<String>>(&data[1])?;
             let mut parameters = vec![];
-            for p in from_str::<Vec<String>>(&params[0])? {
-                parameters.push(from_str::<AstNode>(&p)?);
+            if params.len() != 0 {
+                for p in from_str::<Vec<String>>(&params[0])? {
+                    parameters.push(from_str::<AstNode>(&p)?);
+                }
             }
-            println!("{:?}", parameters);
+            // Hoist variable definitions.
+            let mut vars = vec![];
+            let mut others = vec![];
+            for node in &body.subnodes {
+                match node.kind {
+                    AstNodeKind::VariableDefinition => {
+                        vars.push(AstNode::variable_declaration(node.value.clone()));
+                        others.push(AstNode::assign(node.value.clone(), node.subnodes[0].clone()))
+                    },
+                    _ => others.push(node.clone()),
+                }
+            }
+            vars.append(&mut others);
+            body.subnodes = vars;
             Ok(to_string(&AstNode::function_definition(name, parameters, body))?)
-        })
-        .map(|matched| {
-            let function_definition = from_str::<AstNode>(&matched)?;
-            println!("{}", function_definition);
-            Ok(matched)
         });
     return_statement.clone()
         .or(if_statement.clone())
@@ -283,8 +292,11 @@ fn parse_expression(src: String) -> Result<(String, String), String> {
             let callee = data[0].clone();
             let args = from_str::<Vec<String>>(&data[1])?;
             let mut ast_args = vec![];
-            for arg in &args {
-                ast_args.push(from_str::<AstNode>(arg)?);
+            if let Some(args) = args.get(0) {
+                let args = from_str::<Vec<String>>(&args)?;
+                for arg in &args {
+                    ast_args.push(from_str::<AstNode>(arg)?);
+                }
             }
             Ok(to_string(
                 &AstNode::function_call(callee, ast_args),
