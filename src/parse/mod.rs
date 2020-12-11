@@ -47,9 +47,7 @@ fn parse_statement(src: String) -> Result<(String, String), String> {
         token(r"=").map(|matched| Ok(to_string(&AstNode::assign("".into(), AstNode::null()))?));
     let COMMA = token(r"[,]");
     let expression = Parser::custom(parse_expression);
-    // Statement parser.
     let statement = Parser::custom(parse_statement);
-    // Return statement parser.
     let return_statement = RETURN.clone().ignore()
         .and(expression.clone())
         .and(SEMICOLON.clone().ignore())
@@ -57,11 +55,8 @@ fn parse_statement(src: String) -> Result<(String, String), String> {
             let data = from_str::<AstNode>(&matched)?;
             Ok(to_string(&AstNode::function_return(data))?)
         });
-    // return_statement.parse(src.clone())
-    // Expression statement parser.
     let expression_statement = expression.clone()
         .and(SEMICOLON.clone().ignore());
-    // If statement parser.
     let if_statement = IF.clone().ignore()
         .and(
             LEFT_PAREN.clone().ignore()
@@ -86,7 +81,6 @@ fn parse_statement(src: String) -> Result<(String, String), String> {
             let consequence = from_str::<AstNode>(&others[1])?;
             Ok(to_string(&AstNode::if_statement(conditional, consequence, alternative))?)
         });
-    // if_statement.parse(src.clone())
     let while_statement = WHILE.clone().ignore()
         .and(
             LEFT_PAREN.clone().ignore()
@@ -100,7 +94,6 @@ fn parse_statement(src: String) -> Result<(String, String), String> {
             let body = from_str::<AstNode>(&data[1])?;
             Ok(to_string(&AstNode::while_loop(conditional, body))?)
         });
-    // while_statement.parse(src.clone())
     let var_statement = VAR.clone().ignore()
         .and(IDENTIFIER.clone())
         .and(ASSIGN.clone().ignore())
@@ -112,7 +105,6 @@ fn parse_statement(src: String) -> Result<(String, String), String> {
             let value = from_str::<AstNode>(&data[1])?;
             Ok(to_string(&AstNode::variable_definition(name, value))?)
         });
-    // var_statement.parse(src.clone())
     let assignment_statement = IDENTIFIER.clone()
         .and(ASSIGN.clone().ignore())
         .and(expression.clone())
@@ -123,7 +115,6 @@ fn parse_statement(src: String) -> Result<(String, String), String> {
             let value = from_str::<AstNode>(&data[1])?;
             Ok(to_string(&AstNode::assign(name, value))?)
         });
-    // asssignment_statement.parse(src.clone())
     let block_statement = LEFT_BRACE.clone().ignore()
         .and(statement.clone().repeat_range(0..usize::MAX))
         .and(RIGHT_BRACE.clone().ignore())
@@ -135,7 +126,6 @@ fn parse_statement(src: String) -> Result<(String, String), String> {
             }
             Ok(to_string(&AstNode::block(statements))?)
         });
-    // block_statement.parse(src.clone())
     let args = IDENTIFIER.clone()
         .and(
             COMMA.clone().ignore()
@@ -152,7 +142,6 @@ fn parse_statement(src: String) -> Result<(String, String), String> {
             }
             Ok(to_string(&args)?)
         });
-    // args.parse(src.clone())
     let function_statement = FUNCTION.clone().ignore()
         .and(IDENTIFIER.clone())
         .and(
