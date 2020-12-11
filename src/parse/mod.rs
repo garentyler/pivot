@@ -14,9 +14,6 @@ pub fn parse<T: Into<String>>(src: T) -> AstNode {
         .repeat_range(0..usize::MAX)
         .map(|matched| {
             let data = from_str::<Vec<String>>(&matched)?;
-            for d in &data {
-                println!("{}", d);
-            }
             let mut statements = vec![];
             for d in data {
                 statements.push(from_str::<AstNode>(&d)?);

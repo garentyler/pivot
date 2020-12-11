@@ -1,0 +1,6 @@
+function main(num) {
+  return num + a(2);
+}
+function a(num) {
+  return num;
+}
