@@ -3,6 +3,9 @@ name = "pivot"
 version = "0.1.0"
 authors = ["Garen Tyler <garentyler@gmail.com>"]
 edition = "2018"
+description = "Pivot is a new programming language built with Rust by Garen Tyler. Pivot is currently in the alpha stage of development."
+license = "MIT"
+repository = "https://github.com/garentyler/pivot"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

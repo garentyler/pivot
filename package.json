@@ -1,8 +1,9 @@
 {
   "name": "pivot",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Pivot is a new programming language built with Rust by Garen Tyler. Pivot is currently in the alpha stage of development.",
   "main": "test.js",
+  "private": true,
   "dependencies": {
     "wasi": "0.0.6"
   },
