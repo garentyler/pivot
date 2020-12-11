@@ -154,6 +154,30 @@ impl Wasm for AstNode {
             }
             VariableDeclaration => format!("(local ${} i32)", self.value),
             Assign => format!("(set_local ${} {})", self.value, self.subnodes[0].emit(s)),
+            // Import
+            Import => {
+                r#"(import "console" "log" (func $log (param i32)))"#.into()
+                // let mut out = String::new();
+                // out += "(import";
+                // let num_args = self.subnodes[0].clone().value.parse::<u32>().unwrap();
+                // let returns_value = self.subnodes[1].clone().value.parse::<u32>().unwrap() > 0;
+                // // (import "console" "log" (func $log (param i32)))
+                // out += &format!(" \"{}\"", self.subnodes[2].value.clone());
+                // let mut combined_name = self.subnodes[2].value.clone();
+                // for path in self.subnodes[3..].iter() {
+                //     out += &format!(" \"{}\"", path.value.clone());
+                //     combined_name += &format!("_{}", path.value.clone());
+                // }
+                // out += &format!(" (func ${}", combined_name);
+                // for _ in 0..num_args {
+                //     out += " (param i32)";
+                // }
+                // if returns_value {
+                //     out += " (result i32)";
+                // }
+                // out += "))";
+                // out
+            }
             // Blank node / other
             Null | _ => "".into(),
         }

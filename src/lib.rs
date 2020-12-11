@@ -12,5 +12,9 @@ pub fn compile<T: Into<String>>(src: T) -> Vec<u8> {
 
 pub fn compile_wat<T: Into<String>>(src: T) -> String {
     let mut s = SymbolGenerator::new();
-    parse::parse(src).emit(&mut s)
+    let ast = parse::parse(src);
+    println!("{}", ast);
+    let wasm = ast.emit(&mut s);
+    println!("{}", wasm);
+    wasm
 }

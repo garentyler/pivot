@@ -26,6 +26,8 @@ pub enum AstNodeKind {
     VariableDefinition,
     VariableDeclaration,
     Assign,
+    // Import
+    Import,
     // Blank node
     Null,
 }
@@ -189,6 +191,16 @@ impl AstNode {
             kind: AstNodeKind::Assign,
             value: name,
             subnodes: vec![value],
+        }
+    }
+    // Import
+    pub fn import(num_args: AstNode, returns_value: AstNode, mut fn_path: Vec<AstNode>) -> AstNode {
+        let mut data = vec![num_args, returns_value];
+        data.append(&mut fn_path);
+        AstNode {
+            kind: AstNodeKind::Import,
+            value: "import".into(),
+            subnodes: data,
         }
     }
     // Blank node

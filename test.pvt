@@ -1,5 +1,4 @@
+import log 1 0;
 function main() {
-  var num1 = 5;
-  var num2 = 4;
-  return num1 * num2;
+  log(3);
 }

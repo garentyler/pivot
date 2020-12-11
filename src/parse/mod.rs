@@ -45,13 +45,53 @@ fn parse_statement(src: String) -> Result<(String, String), String> {
     let right_brace = token(r"[}]");
     let while_token = token(r"while\b");
     let var = token(r"var\b");
+    let number = token(r"[0-9]+").map(|matched| {
+        Ok(to_string(&AstNode::integer(
+            matched.parse::<i64>().unwrap(),
+        ))?)
+    });
     let identifier = token(r"[a-zA-Z_][a-zA-Z0-9_]*")
         .map(|matched| Ok(to_string(&AstNode::identifier(matched))?));
     let assign =
         token(r"=").map(|_matched| Ok(to_string(&AstNode::assign("".into(), AstNode::null()))?));
     let comma = token(r"[,]");
+    let period = token(r"[.]");
     let expression = Parser::custom(parse_expression);
     let statement = Parser::custom(parse_statement);
+    let import = token(r"import\b");
+    // Statement parsers.
+    let import_statement = import
+        .clone()
+        .ignore()
+        .and(identifier.clone())
+        .and(
+            period
+                .clone()
+                .ignore()
+                .and(identifier.clone())
+                .repeat_range(0..usize::MAX),
+        )
+        .and(number.clone())
+        .and(number.clone())
+        .and(semicolon.clone().ignore())
+        .map(|matched| {
+            let data = from_str::<Vec<String>>(&matched)?;
+            let import_fn_returns_value = from_str::<AstNode>(&data[1])?;
+            let data = from_str::<Vec<String>>(&data[0])?;
+            let num_import_fn_args = from_str::<AstNode>(&data[1])?;
+            let data = from_str::<Vec<String>>(&data[0])?;
+            let mut import_fn_path = vec![];
+            import_fn_path.push(from_str::<AstNode>(&data[0])?);
+            let data = from_str::<Vec<String>>(&data[1])?;
+            for d in data {
+                import_fn_path.push(from_str::<AstNode>(&d)?);
+            }
+            Ok(to_string(&AstNode::import(
+                num_import_fn_args,
+                import_fn_returns_value,
+                import_fn_path,
+            ))?)
+        });
     let return_statement = return_token
         .clone()
         .ignore()
@@ -216,6 +256,7 @@ fn parse_statement(src: String) -> Result<(String, String), String> {
         });
     return_statement
         .clone()
+        .or(import_statement.clone())
         .or(if_statement.clone())
         .or(while_statement.clone())
         .or(var_statement.clone())
@@ -276,9 +317,8 @@ fn parse_expression(src: String) -> Result<(String, String), String> {
             AstNode::null(),
         ))?)
     });
-    // Expression parser.
+    // Expression parsers.
     let expression = Parser::custom(parse_expression);
-    // Call parser.
     let args = expression
         .clone()
         .and(
@@ -316,7 +356,6 @@ fn parse_expression(src: String) -> Result<(String, String), String> {
             }
             Ok(to_string(&AstNode::function_call(callee, ast_args))?)
         });
-    // Atom parser.
     let atom = call
         .clone()
         .or(identifier.clone())
@@ -326,7 +365,6 @@ fn parse_expression(src: String) -> Result<(String, String), String> {
             .ignore()
             .and(expression.clone())
             .and(right_paren.clone().ignore()));
-    // Unary operator parsers.
     let unary = not.clone().optional().and(atom.clone()).map(|matched| {
         let data = from_str::<Vec<String>>(&matched)?;
         let atom_data = from_str::<AstNode>(&data[1])?;
@@ -335,7 +373,6 @@ fn parse_expression(src: String) -> Result<(String, String), String> {
             _ => atom_data,
         })?)
     });
-    // Infix operator parsers.
     let infix = |operator_parser: Parser, term_parser: Parser| {
         term_parser
             .clone()
