@@ -1,14 +1,12 @@
-use ron::from_str;
 use crate::ast::{AstNode, AstNodeKind};
+use ron::from_str;
 
 pub struct SymbolGenerator {
     counter: usize,
 }
 impl SymbolGenerator {
     pub fn new() -> SymbolGenerator {
-        SymbolGenerator {
-            counter: 0,
-        }
+        SymbolGenerator { counter: 0 }
     }
     pub fn next(&mut self) -> usize {
         self.counter += 1;
@@ -29,12 +27,36 @@ impl Wasm for AstNode {
             // Unary operators
             Not => format!("(i32.eq (i32.const 0) {})", self.subnodes[1].emit(s)),
             // Infix operators
-            NotEqual => format!("(i32.ne {} {})", self.subnodes[0].emit(s), self.subnodes[1].emit(s)),
-            Equal => format!("(i32.eq {} {})", self.subnodes[0].emit(s), self.subnodes[1].emit(s)),
-            Add => format!("(i32.add {} {})", self.subnodes[0].emit(s), self.subnodes[1].emit(s)),
-            Subtract => format!("(i32.sub {} {})", self.subnodes[0].emit(s), self.subnodes[1].emit(s)),
-            Multiply => format!("(i32.mul {} {})", self.subnodes[0].emit(s), self.subnodes[1].emit(s)),
-            Divide => format!("(i32.div_s {} {})", self.subnodes[0].emit(s), self.subnodes[1].emit(s)),
+            NotEqual => format!(
+                "(i32.ne {} {})",
+                self.subnodes[0].emit(s),
+                self.subnodes[1].emit(s)
+            ),
+            Equal => format!(
+                "(i32.eq {} {})",
+                self.subnodes[0].emit(s),
+                self.subnodes[1].emit(s)
+            ),
+            Add => format!(
+                "(i32.add {} {})",
+                self.subnodes[0].emit(s),
+                self.subnodes[1].emit(s)
+            ),
+            Subtract => format!(
+                "(i32.sub {} {})",
+                self.subnodes[0].emit(s),
+                self.subnodes[1].emit(s)
+            ),
+            Multiply => format!(
+                "(i32.mul {} {})",
+                self.subnodes[0].emit(s),
+                self.subnodes[1].emit(s)
+            ),
+            Divide => format!(
+                "(i32.div_s {} {})",
+                self.subnodes[0].emit(s),
+                self.subnodes[1].emit(s)
+            ),
             // Control flow
             Block => {
                 let mut out = String::new();
@@ -46,7 +68,11 @@ impl Wasm for AstNode {
             }
             IfStatement => {
                 let mut out = String::new();
-                out += &format!("(if {} (then {})", self.subnodes[0].emit(s), self.subnodes[1].emit(s)); // Emit the conditional and consequence.
+                out += &format!(
+                    "(if {} (then {})",
+                    self.subnodes[0].emit(s),
+                    self.subnodes[1].emit(s)
+                ); // Emit the conditional and consequence.
                 if let Some(alternative) = self.subnodes.get(2) {
                     out += &format!(" (else {})", alternative.emit(s)); // Emit the alternative.
                 }
@@ -59,7 +85,11 @@ impl Wasm for AstNode {
                 out += &format!("(block ${}_wrapper", loop_symbol);
                 out += &format!(" (loop ${}_loop", loop_symbol);
                 out += &format!(" {}", self.subnodes[1].emit(s));
-                out += &format!(" (br_if ${}_wrapper (i32.eq (i32.const 0) {}))", loop_symbol, self.subnodes[0].emit(s));
+                out += &format!(
+                    " (br_if ${}_wrapper (i32.eq (i32.const 0) {}))",
+                    loop_symbol,
+                    self.subnodes[0].emit(s)
+                );
                 out += &format!(" (br ${}_loop)", loop_symbol);
                 out += "))";
                 out
@@ -91,7 +121,7 @@ impl Wasm for AstNode {
                 }
                 out += ")";
                 out
-            },
+            }
             FunctionReturn => format!("{} (return)", self.subnodes[0].emit(s)),
             FunctionDefinition => {
                 let mut out = String::new();

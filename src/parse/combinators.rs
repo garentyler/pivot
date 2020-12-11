@@ -4,15 +4,11 @@ use std::ops::Range;
 use std::rc::Rc;
 
 pub enum ParserKind {
-    Literal(String),
     Regex(Regex),
-    Constant(String),
     And,
     Ignore,
     Or,
-    Repeat(usize),
     RepeatRange(Range<usize>),
-    Error(String),
     Map(Rc<Box<dyn Fn(String) -> Result<String, ron::Error>>>),
     Custom(Rc<Box<dyn Fn(String) -> Result<(String, String), String>>>),
 }
@@ -25,15 +21,11 @@ impl std::fmt::Display for ParserKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use ParserKind::*;
         match self {
-            Literal(s) => write!(f, "Literal \"{}\"", s),
             Regex(r) => write!(f, "Regex /{}/", r.as_str()),
-            Constant(c) => write!(f, "Constant \"{}\"", c),
             And => write!(f, "And"),
             Ignore => write!(f, "Ignore"),
             Or => write!(f, "Or"),
-            Repeat(num) => write!(f, "Repeat {}", num),
             RepeatRange(range) => write!(f, "RepeatRange {:?}", range),
-            Error(msg) => write!(f, "Error \"{}\"", msg),
             Map(_) => write!(f, "Map"),
             Custom(_) => write!(f, "Custom"),
         }
@@ -43,15 +35,11 @@ impl Clone for ParserKind {
     fn clone(&self) -> Self {
         use ParserKind::*;
         match self {
-            Literal(s) => Literal(s.clone()),
             Regex(r) => Regex(r.clone()),
-            Constant(c) => Constant(c.clone()),
             And => And,
             Ignore => Ignore,
             Or => Or,
-            Repeat(num) => Repeat(num.clone()),
             RepeatRange(range) => RepeatRange(range.clone()),
-            Error(msg) => Error(msg.clone()),
             Map(cfn) => Map(Rc::clone(cfn)),
             Custom(cfn) => Custom(Rc::clone(cfn)),
         }
@@ -78,13 +66,6 @@ impl Parser {
         use ParserKind::*;
         let s: String = src.into();
         match &self.kind {
-            Literal(literal) => {
-                if s.len() >= literal.len() && s[..literal.len()] == literal[..] {
-                    Ok((s[..literal.len()].to_owned(), s[literal.len()..].to_owned()))
-                } else {
-                    Err(s)
-                }
-            }
             Regex(re) => {
                 if let Some(mat) = re.find(&s) {
                     if mat.start() == 0 {
@@ -99,10 +80,8 @@ impl Parser {
                     Err(s)
                 }
             }
-            Constant(constant) => Ok((constant.clone(), s)),
             And => {
-                if self.subparsers[0].kind == Ignore
-                    && self.subparsers[1].kind == Ignore {
+                if self.subparsers[0].kind == Ignore && self.subparsers[1].kind == Ignore {
                     Ok(("".into(), s))
                 } else if self.subparsers[0].kind == Ignore {
                     let (_, rest) = self.subparsers[0].parse(s)?;
@@ -123,25 +102,13 @@ impl Parser {
                     ))
                 }
             }
-            Ignore => {
-                Ok(("".into(), self.subparsers[0].parse(s)?.1))
-            }
+            Ignore => Ok(("".into(), self.subparsers[0].parse(s)?.1)),
             Or => {
                 if let Ok(lresult) = self.subparsers[0].parse(s.clone()) {
                     Ok(lresult)
                 } else {
                     self.subparsers[1].parse(s.clone())
                 }
-            }
-            Repeat(num_repeats) => {
-                let mut matched = vec![];
-                let mut rest = s.clone();
-                for _ in 0..*num_repeats {
-                    let (m, r) = self.subparsers[0].parse(rest)?;
-                    matched.push(m);
-                    rest = r;
-                }
-                Ok((to_string(&matched).unwrap(), rest))
             }
             RepeatRange(range) => {
                 let mut matched = vec![];
@@ -169,7 +136,6 @@ impl Parser {
 
                 Ok((to_string(&matched).unwrap(), rest))
             }
-            Error(msg) => panic!(msg.clone()),
             Map(cfn) => {
                 let (matched, rest) = self.subparsers[0].parse(s)?;
                 if let Ok(m) = cfn(matched) {
@@ -178,34 +144,14 @@ impl Parser {
                     Err(rest)
                 }
             }
-            Custom(cfn) => {
-                cfn(s)
-            }
+            Custom(cfn) => cfn(s),
         }
     }
 
     // Static
-    pub fn literal<T: Into<String>>(s: T) -> Parser {
-        Parser {
-            kind: ParserKind::Literal(s.into()),
-            subparsers: vec![],
-        }
-    }
     pub fn regex<T: Into<String>>(s: T) -> Parser {
         Parser {
             kind: ParserKind::Regex(Regex::new(&s.into()).expect("could not compile regex")),
-            subparsers: vec![],
-        }
-    }
-    pub fn constant<T: Into<String>>(s: T) -> Parser {
-        Parser {
-            kind: ParserKind::Constant(s.into()),
-            subparsers: vec![],
-        }
-    }
-    pub fn error<T: Into<String>>(s: T) -> Parser {
-        Parser {
-            kind: ParserKind::Error(s.into()),
             subparsers: vec![],
         }
     }
@@ -236,12 +182,6 @@ impl Parser {
         Parser {
             kind: ParserKind::Or,
             subparsers: vec![self, r],
-        }
-    }
-    pub fn repeat(self, num_repeats: usize) -> Parser {
-        Parser {
-            kind: ParserKind::Repeat(num_repeats),
-            subparsers: vec![self],
         }
     }
     pub fn repeat_range(self, num_repeats: Range<usize>) -> Parser {

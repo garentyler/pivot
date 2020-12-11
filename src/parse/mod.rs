@@ -9,8 +9,12 @@ pub fn parse<T: Into<String>>(src: T) -> AstNode {
     let whitespace = Parser::regex(r"[ \n\r\t]+");
     let comments = Parser::regex(r"[/][/].*").or(Parser::regex(r"[/][*].*[*][/]"));
     let ignored = whitespace.or(comments).repeat_range(0..usize::MAX);
-    let statement = ignored.optional().ignore().and(Parser::custom(parse_statement));
-    let parse_program = statement.clone()
+    let statement = ignored
+        .optional()
+        .ignore()
+        .and(Parser::custom(parse_statement));
+    let parse_program = statement
+        .clone()
         .repeat_range(0..usize::MAX)
         .map(|matched| {
             let data = from_str::<Vec<String>>(&matched)?;
@@ -30,44 +34,51 @@ fn parse_statement(src: String) -> Result<(String, String), String> {
     let i = ignored.clone();
     let token = move |pattern: &str| i.clone().ignore().and(Parser::regex(pattern));
     // Token helper parsers.
-    let FUNCTION = Parser::regex(r"function\b").or(ignored.clone());
-    let RETURN = token(r"return\b");
-    let SEMICOLON = token(r"[;]");
-    let IF = token(r"if\b");
-    let ELSE = token(r"else\b");
-    let LEFT_PAREN = token(r"[(]");
-    let RIGHT_PAREN = token(r"[)]");
-    let LEFT_BRACE = token(r"[{]");
-    let RIGHT_BRACE = token(r"[}]");
-    let WHILE = token(r"while\b");
-    let VAR = token(r"var\b");
-    let IDENTIFIER = token(r"[a-zA-Z_][a-zA-Z0-9_]*")
+    let function = Parser::regex(r"function\b").or(ignored.clone());
+    let return_token = token(r"return\b");
+    let semicolon = token(r"[;]");
+    let if_token = token(r"if\b");
+    let else_token = token(r"else\b");
+    let left_paren = token(r"[(]");
+    let right_paren = token(r"[)]");
+    let left_brace = token(r"[{]");
+    let right_brace = token(r"[}]");
+    let while_token = token(r"while\b");
+    let var = token(r"var\b");
+    let identifier = token(r"[a-zA-Z_][a-zA-Z0-9_]*")
         .map(|matched| Ok(to_string(&AstNode::identifier(matched))?));
-    let ASSIGN =
-        token(r"=").map(|matched| Ok(to_string(&AstNode::assign("".into(), AstNode::null()))?));
-    let COMMA = token(r"[,]");
+    let assign =
+        token(r"=").map(|_matched| Ok(to_string(&AstNode::assign("".into(), AstNode::null()))?));
+    let comma = token(r"[,]");
     let expression = Parser::custom(parse_expression);
     let statement = Parser::custom(parse_statement);
-    let return_statement = RETURN.clone().ignore()
+    let return_statement = return_token
+        .clone()
+        .ignore()
         .and(expression.clone())
-        .and(SEMICOLON.clone().ignore())
+        .and(semicolon.clone().ignore())
         .map(|matched| {
             let data = from_str::<AstNode>(&matched)?;
             Ok(to_string(&AstNode::function_return(data))?)
         });
-    let expression_statement = expression.clone()
-        .and(SEMICOLON.clone().ignore());
-    let if_statement = IF.clone().ignore()
+    let expression_statement = expression.clone().and(semicolon.clone().ignore());
+    let if_statement = if_token
+        .clone()
+        .ignore()
         .and(
-            LEFT_PAREN.clone().ignore()
-            .and(expression.clone())
-            .and(RIGHT_PAREN.clone().ignore())
+            left_paren
+                .clone()
+                .ignore()
+                .and(expression.clone())
+                .and(right_paren.clone().ignore()),
         )
         .and(statement.clone())
         .and(
-            ELSE.clone().ignore()
-            .and(statement.clone())
-            .optional()
+            else_token
+                .clone()
+                .ignore()
+                .and(statement.clone())
+                .optional(),
         )
         .map(|matched| {
             let data = from_str::<Vec<String>>(&matched)?;
@@ -79,13 +90,21 @@ fn parse_statement(src: String) -> Result<(String, String), String> {
             let others = from_str::<Vec<String>>(&data[0])?;
             let conditional = from_str::<AstNode>(&others[0])?;
             let consequence = from_str::<AstNode>(&others[1])?;
-            Ok(to_string(&AstNode::if_statement(conditional, consequence, alternative))?)
+            Ok(to_string(&AstNode::if_statement(
+                conditional,
+                consequence,
+                alternative,
+            ))?)
         });
-    let while_statement = WHILE.clone().ignore()
+    let while_statement = while_token
+        .clone()
+        .ignore()
         .and(
-            LEFT_PAREN.clone().ignore()
-            .and(expression.clone())
-            .and(RIGHT_PAREN.clone().ignore())
+            left_paren
+                .clone()
+                .ignore()
+                .and(expression.clone())
+                .and(right_paren.clone().ignore()),
         )
         .and(statement.clone())
         .map(|matched| {
@@ -94,30 +113,35 @@ fn parse_statement(src: String) -> Result<(String, String), String> {
             let body = from_str::<AstNode>(&data[1])?;
             Ok(to_string(&AstNode::while_loop(conditional, body))?)
         });
-    let var_statement = VAR.clone().ignore()
-        .and(IDENTIFIER.clone())
-        .and(ASSIGN.clone().ignore())
+    let var_statement = var
+        .clone()
+        .ignore()
+        .and(identifier.clone())
+        .and(assign.clone().ignore())
         .and(expression.clone())
-        .and(SEMICOLON.clone().ignore())
+        .and(semicolon.clone().ignore())
         .map(|matched| {
             let data = from_str::<Vec<String>>(&matched)?;
             let name = from_str::<AstNode>(&data[0])?.value;
             let value = from_str::<AstNode>(&data[1])?;
             Ok(to_string(&AstNode::variable_definition(name, value))?)
         });
-    let assignment_statement = IDENTIFIER.clone()
-        .and(ASSIGN.clone().ignore())
+    let assignment_statement = identifier
+        .clone()
+        .and(assign.clone().ignore())
         .and(expression.clone())
-        .and(SEMICOLON.clone().ignore())
+        .and(semicolon.clone().ignore())
         .map(|matched| {
             let data = from_str::<Vec<String>>(&matched)?;
             let name = from_str::<AstNode>(&data[0])?.value;
             let value = from_str::<AstNode>(&data[1])?;
             Ok(to_string(&AstNode::assign(name, value))?)
         });
-    let block_statement = LEFT_BRACE.clone().ignore()
+    let block_statement = left_brace
+        .clone()
+        .ignore()
         .and(statement.clone().repeat_range(0..usize::MAX))
-        .and(RIGHT_BRACE.clone().ignore())
+        .and(right_brace.clone().ignore())
         .map(|matched| {
             let data = from_str::<Vec<String>>(&matched)?;
             let mut statements = vec![];
@@ -126,10 +150,13 @@ fn parse_statement(src: String) -> Result<(String, String), String> {
             }
             Ok(to_string(&AstNode::block(statements))?)
         });
-    let args = IDENTIFIER.clone()
+    let args = identifier
+        .clone()
         .and(
-            COMMA.clone().ignore()
-                .and(IDENTIFIER.clone())
+            comma
+                .clone()
+                .ignore()
+                .and(identifier.clone())
                 .repeat_range(0..usize::MAX),
         )
         .map(|matched| {
@@ -142,12 +169,16 @@ fn parse_statement(src: String) -> Result<(String, String), String> {
             }
             Ok(to_string(&args)?)
         });
-    let function_statement = FUNCTION.clone().ignore()
-        .and(IDENTIFIER.clone())
+    let function_statement = function
+        .clone()
+        .ignore()
+        .and(identifier.clone())
         .and(
-            LEFT_PAREN.clone().ignore()
-            .and(args.clone().optional())
-            .and(RIGHT_PAREN.clone().ignore())
+            left_paren
+                .clone()
+                .ignore()
+                .and(args.clone().optional())
+                .and(right_paren.clone().ignore()),
         )
         .and(block_statement.clone())
         .map(|matched| {
@@ -169,16 +200,22 @@ fn parse_statement(src: String) -> Result<(String, String), String> {
                 match node.kind {
                     AstNodeKind::VariableDefinition => {
                         vars.push(AstNode::variable_declaration(node.value.clone()));
-                        others.push(AstNode::assign(node.value.clone(), node.subnodes[0].clone()))
-                    },
+                        others.push(AstNode::assign(
+                            node.value.clone(),
+                            node.subnodes[0].clone(),
+                        ))
+                    }
                     _ => others.push(node.clone()),
                 }
             }
             vars.append(&mut others);
             body.subnodes = vars;
-            Ok(to_string(&AstNode::function_definition(name, parameters, body))?)
+            Ok(to_string(&AstNode::function_definition(
+                name, parameters, body,
+            ))?)
         });
-    return_statement.clone()
+    return_statement
+        .clone()
         .or(if_statement.clone())
         .or(while_statement.clone())
         .or(var_statement.clone())
@@ -196,55 +233,44 @@ fn parse_expression(src: String) -> Result<(String, String), String> {
     let i = ignored.clone();
     let token = move |pattern: &str| i.clone().ignore().and(Parser::regex(pattern));
     // Token helper parsers.
-    let FUNCTION = Parser::regex(r"function\b").or(ignored.clone());
-    let IF = token(r"if\b");
-    let ELSE = token(r"else\b");
-    let RETURN = token(r"return\b");
-    let VAR = token(r"var\b");
-    let WHILE = token(r"while\b");
-    let COMMA = token(r"[,]");
-    let SEMICOLON = token(r"[;]");
-    let LEFT_PAREN = token(r"[(]");
-    let RIGHT_PAREN = token(r"[)]");
-    let LEFT_BRACE = token(r"[{]");
-    let RIGHT_BRACE = token(r"[}]");
-    let NUMBER = token(r"[0-9]+").map(|matched| {
+    let comma = token(r"[,]");
+    let left_paren = token(r"[(]");
+    let right_paren = token(r"[)]");
+    let number = token(r"[0-9]+").map(|matched| {
         Ok(to_string(&AstNode::integer(
             matched.parse::<i64>().unwrap(),
         ))?)
     });
-    let IDENTIFIER = token(r"[a-zA-Z_][a-zA-Z0-9_]*")
+    let identifier = token(r"[a-zA-Z_][a-zA-Z0-9_]*")
         .map(|matched| Ok(to_string(&AstNode::identifier(matched))?));
-    let NOT = token(r"!").map(|matched| Ok(to_string(&AstNode::not(AstNode::null()))?));
-    let ASSIGN =
-        token(r"=").map(|matched| Ok(to_string(&AstNode::assign("".into(), AstNode::null()))?));
-    let EQUAL = token(r"==").map(|matched| {
+    let not = token(r"!").map(|_matched| Ok(to_string(&AstNode::not(AstNode::null()))?));
+    let equal = token(r"==").map(|_matched| {
         Ok(to_string(&AstNode::equal(
             AstNode::null(),
             AstNode::null(),
         ))?)
     });
-    let NOT_EQUAL = token(r"!=").map(|matched| {
+    let not_equal = token(r"!=").map(|_matched| {
         Ok(to_string(&AstNode::not_equal(
             AstNode::null(),
             AstNode::null(),
         ))?)
     });
-    let PLUS = token(r"[+]")
-        .map(|matched| Ok(to_string(&AstNode::add(AstNode::null(), AstNode::null()))?));
-    let MINUS = token(r"[-]").map(|matched| {
+    let plus = token(r"[+]")
+        .map(|_matched| Ok(to_string(&AstNode::add(AstNode::null(), AstNode::null()))?));
+    let minus = token(r"[-]").map(|_matched| {
         Ok(to_string(&AstNode::subtract(
             AstNode::null(),
             AstNode::null(),
         ))?)
     });
-    let STAR = token(r"[*]").map(|matched| {
+    let star = token(r"[*]").map(|_matched| {
         Ok(to_string(&AstNode::multiply(
             AstNode::null(),
             AstNode::null(),
         ))?)
     });
-    let SLASH = token(r"[/]").map(|matched| {
+    let slash = token(r"[/]").map(|_matched| {
         Ok(to_string(&AstNode::divide(
             AstNode::null(),
             AstNode::null(),
@@ -253,9 +279,12 @@ fn parse_expression(src: String) -> Result<(String, String), String> {
     // Expression parser.
     let expression = Parser::custom(parse_expression);
     // Call parser.
-    let args = expression.clone()
+    let args = expression
+        .clone()
         .and(
-            COMMA.clone().ignore()
+            comma
+                .clone()
+                .ignore()
                 .and(expression.clone())
                 .repeat_range(0..usize::MAX),
         )
@@ -269,10 +298,11 @@ fn parse_expression(src: String) -> Result<(String, String), String> {
             }
             Ok(to_string(&args)?)
         });
-    let call = IDENTIFIER.clone()
-        .and(LEFT_PAREN.clone().ignore())
+    let call = identifier
+        .clone()
+        .and(left_paren.clone().ignore())
         .and(args.clone().optional())
-        .and(RIGHT_PAREN.clone().ignore())
+        .and(right_paren.clone().ignore())
         .map(|matched| {
             let data = from_str::<Vec<String>>(&matched)?;
             let callee = data[0].clone();
@@ -284,22 +314,20 @@ fn parse_expression(src: String) -> Result<(String, String), String> {
                     ast_args.push(from_str::<AstNode>(arg)?);
                 }
             }
-            Ok(to_string(
-                &AstNode::function_call(callee, ast_args),
-            )?)
+            Ok(to_string(&AstNode::function_call(callee, ast_args))?)
         });
     // Atom parser.
     let atom = call
         .clone()
-        .or(IDENTIFIER.clone())
-        .or(NUMBER.clone())
-        .or(
-            LEFT_PAREN.clone().ignore()
-                .and(expression.clone())
-                .and(RIGHT_PAREN.clone().ignore())
-        );
+        .or(identifier.clone())
+        .or(number.clone())
+        .or(left_paren
+            .clone()
+            .ignore()
+            .and(expression.clone())
+            .and(right_paren.clone().ignore()));
     // Unary operator parsers.
-    let unary = NOT.clone().optional().and(atom.clone()).map(|matched| {
+    let unary = not.clone().optional().and(atom.clone()).map(|matched| {
         let data = from_str::<Vec<String>>(&matched)?;
         let atom_data = from_str::<AstNode>(&data[1])?;
         Ok(to_string(&match &data[0][..] {
@@ -331,8 +359,8 @@ fn parse_expression(src: String) -> Result<(String, String), String> {
                 Ok(to_string(&current)?)
             })
     };
-    let product = infix(STAR.clone().or(SLASH.clone()), unary.clone());
-    let sum = infix(PLUS.clone().or(MINUS.clone()), product.clone());
-    let comparison = infix(EQUAL.clone().or(NOT_EQUAL.clone()), sum.clone());
+    let product = infix(star.clone().or(slash.clone()), unary.clone());
+    let sum = infix(plus.clone().or(minus.clone()), product.clone());
+    let comparison = infix(equal.clone().or(not_equal.clone()), sum.clone());
     comparison.parse(src)
 }
