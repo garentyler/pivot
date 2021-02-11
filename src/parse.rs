@@ -1,7 +1,5 @@
-mod combinators;
-
 use crate::ast::{AstNode, AstNodeKind};
-use combinators::Parser;
+use nyst::Parser;
 use ron::{from_str, to_string};
 
 pub fn parse<T: Into<String>>(src: T) -> AstNode {
