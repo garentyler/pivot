@@ -1,253 +1,195 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub enum AstNodeKind {
+pub enum AstNode {
     // Primitives
-    Integer,
-    Identifier,
+    Integer(i32),
+    Identifier(String),
+    String(String),
+    Boolean(bool),
     // Unary operators
-    Not,
+    Not {
+        operand: Box<AstNode>,
+    },
     // Infix operators
-    NotEqual,
-    Equal,
-    Add,
-    Subtract,
-    Multiply,
-    Divide,
+    Equal {
+        left: Box<AstNode>,
+        right: Box<AstNode>,
+    },
+    Add {
+        left: Box<AstNode>,
+        right: Box<AstNode>,
+    },
+    Subtract {
+        left: Box<AstNode>,
+        right: Box<AstNode>,
+    },
+    Multiply {
+        left: Box<AstNode>,
+        right: Box<AstNode>,
+    },
+    Divide {
+        left: Box<AstNode>,
+        right: Box<AstNode>,
+    },
+    Assign {
+        left: Box<AstNode>,
+        right: Box<AstNode>,
+    },
     // Control flow
-    Block,
-    IfStatement,
-    WhileLoop,
-    Program,
+    Block {
+        statements: Vec<AstNode>,
+    },
+    If {
+        condition: Box<AstNode>,
+        consequence: Box<AstNode>,
+        alternative: Option<Box<AstNode>>,
+    },
+    While {
+        condition: Box<AstNode>,
+        body: Box<AstNode>,
+    },
     // Functions and variables
-    FunctionCall,
-    FunctionReturn,
-    FunctionDefinition,
-    VariableDefinition,
-    VariableDeclaration,
-    Assign,
-    // Import
-    Import,
-    // Blank node
+    FunctionCall {
+        identifier: Box<AstNode>,
+        arguments: Vec<AstNode>,
+    },
+    FunctionReturn {
+        value: Box<AstNode>,
+    },
+    FunctionDefinition {
+        identifier: Box<AstNode>,
+        arguments: Vec<AstNode>,
+        body: Box<AstNode>,
+    },
+    VariableDeclaration {
+        identifier: Box<AstNode>,
+    },
+    // Other
+    Import {
+        identifier: Box<AstNode>,
+    },
     Null,
 }
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct AstNode {
-    pub kind: AstNodeKind,
-    pub value: String,
-    pub subnodes: Vec<AstNode>,
-}
 impl AstNode {
-    pub fn new(kind: AstNodeKind, value: String, subnodes: Vec<AstNode>) -> AstNode {
-        AstNode {
-            kind,
-            value,
-            subnodes,
-        }
-    }
-
     // Primitives
-    pub fn integer(num: i64) -> AstNode {
-        AstNode {
-            kind: AstNodeKind::Integer,
-            value: num.to_string(),
-            subnodes: vec![],
-        }
+    pub fn integer(value: i32) -> AstNode {
+        AstNode::Integer(value)
     }
-    pub fn identifier(id: String) -> AstNode {
-        AstNode {
-            kind: AstNodeKind::Identifier,
-            value: id,
-            subnodes: vec![],
-        }
+    pub fn identifier(value: String) -> AstNode {
+        AstNode::Identifier(value)
+    }
+    pub fn string(value: String) -> AstNode {
+        AstNode::String(value)
+    }
+    pub fn boolean(value: bool) -> AstNode {
+        AstNode::Boolean(value)
     }
     // Unary operators
     pub fn not(operand: AstNode) -> AstNode {
-        AstNode {
-            kind: AstNodeKind::Not,
-            value: "not".into(),
-            subnodes: vec![operand],
+        AstNode::Not {
+            operand: Box::new(operand),
         }
     }
     // Infix operators
-    pub fn not_equal(left: AstNode, right: AstNode) -> AstNode {
-        AstNode {
-            kind: AstNodeKind::NotEqual,
-            value: "not_equal".into(),
-            subnodes: vec![left, right],
+    pub fn equal(left: AstNode, right: AstNode) -> AstNode {
+        AstNode::Equal {
+            left: Box::new(left),
+            right: Box::new(right),
         }
     }
-    pub fn equal(left: AstNode, right: AstNode) -> AstNode {
-        AstNode {
-            kind: AstNodeKind::Equal,
-            value: "equal".into(),
-            subnodes: vec![left, right],
-        }
+    pub fn not_equal(left: AstNode, right: AstNode) -> AstNode {
+        AstNode::not(AstNode::Equal {
+            left: Box::new(left),
+            right: Box::new(right),
+        })
     }
     pub fn add(left: AstNode, right: AstNode) -> AstNode {
-        AstNode {
-            kind: AstNodeKind::Add,
-            value: "add".into(),
-            subnodes: vec![left, right],
+        AstNode::Add {
+            left: Box::new(left),
+            right: Box::new(right),
         }
     }
     pub fn subtract(left: AstNode, right: AstNode) -> AstNode {
-        AstNode {
-            kind: AstNodeKind::Subtract,
-            value: "subtract".into(),
-            subnodes: vec![left, right],
+        AstNode::Subtract {
+            left: Box::new(left),
+            right: Box::new(right),
         }
     }
     pub fn multiply(left: AstNode, right: AstNode) -> AstNode {
-        AstNode {
-            kind: AstNodeKind::Multiply,
-            value: "multiply".into(),
-            subnodes: vec![left, right],
+        AstNode::Multiply {
+            left: Box::new(left),
+            right: Box::new(right),
         }
     }
     pub fn divide(left: AstNode, right: AstNode) -> AstNode {
-        AstNode {
-            kind: AstNodeKind::Divide,
-            value: "divide".into(),
-            subnodes: vec![left, right],
+        AstNode::Divide {
+            left: Box::new(left),
+            right: Box::new(right),
+        }
+    }
+    pub fn assign(left: AstNode, right: AstNode) -> AstNode {
+        AstNode::Assign {
+            left: Box::new(left),
+            right: Box::new(right),
         }
     }
     // Control flow
     pub fn block(statements: Vec<AstNode>) -> AstNode {
-        AstNode {
-            kind: AstNodeKind::Block,
-            value: "block".into(),
-            subnodes: statements,
-        }
+        AstNode::Block { statements }
     }
     pub fn if_statement(
-        conditional: AstNode,
+        condition: AstNode,
         consequence: AstNode,
-        alternative: AstNode,
+        alternative: Option<AstNode>,
     ) -> AstNode {
-        AstNode {
-            kind: AstNodeKind::IfStatement,
-            value: "if_statement".into(),
-            subnodes: vec![conditional, consequence, alternative],
+        AstNode::If {
+            condition: Box::new(condition),
+            consequence: Box::new(consequence),
+            alternative: alternative.and_then(|alt| Some(Box::new(alt))),
         }
     }
-    pub fn while_loop(conditional: AstNode, body: AstNode) -> AstNode {
-        AstNode {
-            kind: AstNodeKind::WhileLoop,
-            value: "while_loop".into(),
-            subnodes: vec![conditional, body],
-        }
-    }
-    pub fn program(statements: Vec<AstNode>) -> AstNode {
-        AstNode {
-            kind: AstNodeKind::Program,
-            value: "program".into(),
-            subnodes: statements,
+    pub fn while_loop(condition: AstNode, body: AstNode) -> AstNode {
+        AstNode::While {
+            condition: Box::new(condition),
+            body: Box::new(body),
         }
     }
     // Functions and variables
-    pub fn function_call(name: String, parameters: Vec<AstNode>) -> AstNode {
-        AstNode {
-            kind: AstNodeKind::FunctionCall,
-            value: name,
-            subnodes: parameters,
+    pub fn function_call(identifier: AstNode, arguments: Vec<AstNode>) -> AstNode {
+        AstNode::FunctionCall {
+            identifier: Box::new(identifier),
+            arguments,
         }
     }
-    pub fn function_return(operand: AstNode) -> AstNode {
-        AstNode {
-            kind: AstNodeKind::FunctionReturn,
-            value: "return".into(),
-            subnodes: vec![operand],
+    pub fn function_return(value: AstNode) -> AstNode {
+        AstNode::FunctionReturn {
+            value: Box::new(value),
         }
     }
-    pub fn function_definition(name: String, parameters: Vec<AstNode>, body: AstNode) -> AstNode {
-        let mut params = vec![body];
-        for p in parameters {
-            params.push(p);
-        }
-        AstNode {
-            kind: AstNodeKind::FunctionDefinition,
-            value: name,
-            subnodes: params,
-        }
-    }
-    pub fn variable_definition(name: String, value: AstNode) -> AstNode {
-        AstNode {
-            kind: AstNodeKind::VariableDefinition,
-            value: name,
-            subnodes: vec![value],
+    pub fn function_definition(
+        identifier: AstNode,
+        arguments: Vec<AstNode>,
+        body: AstNode,
+    ) -> AstNode {
+        AstNode::FunctionDefinition {
+            identifier: Box::new(identifier),
+            arguments,
+            body: Box::new(body),
         }
     }
-    pub fn variable_declaration(name: String) -> AstNode {
-        AstNode {
-            kind: AstNodeKind::VariableDeclaration,
-            value: name,
-            subnodes: vec![],
+    pub fn variable_declaration(identifier: AstNode) -> AstNode {
+        AstNode::VariableDeclaration {
+            identifier: Box::new(identifier),
         }
     }
-    pub fn assign(name: String, value: AstNode) -> AstNode {
-        AstNode {
-            kind: AstNodeKind::Assign,
-            value: name,
-            subnodes: vec![value],
-        }
-    }
-    // Import
-    pub fn import(num_args: AstNode, returns_value: AstNode, mut fn_path: Vec<AstNode>) -> AstNode {
-        let mut data = vec![num_args, returns_value];
-        data.append(&mut fn_path);
-        AstNode {
-            kind: AstNodeKind::Import,
-            value: "import".into(),
-            subnodes: data,
-        }
-    }
-    // Blank node
-    pub fn null() -> AstNode {
-        AstNode {
-            kind: AstNodeKind::Null,
-            value: "".into(),
-            subnodes: vec![],
-        }
-    }
-
     // Other
-    pub fn pretty_print(&self, f: &mut std::fmt::Formatter<'_>, indent: usize) -> std::fmt::Result {
-        for _ in 0..indent {
-            write!(f, " ")?;
+    pub fn import(identifier: AstNode) -> AstNode {
+        AstNode::Import {
+            identifier: Box::new(identifier),
         }
-        write!(f, "{{\n")?;
-        for _ in 0..indent + 2 {
-            write!(f, " ")?;
-        }
-        write!(f, "kind: {:?}\n", self.kind)?;
-        for _ in 0..indent + 2 {
-            write!(f, " ")?;
-        }
-        write!(f, "value: {:?}\n", self.value)?;
-        if self.subnodes.len() > 0 {
-            for _ in 0..indent + 2 {
-                write!(f, " ")?;
-            }
-            write!(f, "subnodes: [\n")?;
-            for subnode in &self.subnodes {
-                subnode.pretty_print(f, indent + 4)?;
-                write!(f, ",\n")?;
-            }
-            for _ in 0..indent + 2 {
-                write!(f, " ")?;
-            }
-            write!(f, "]\n")?;
-        }
-        for _ in 0..indent {
-            write!(f, " ")?;
-        }
-        write!(f, "}}")
     }
-}
-impl std::fmt::Display for AstNode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.pretty_print(f, 0)
+    pub fn null() -> AstNode {
+        AstNode::Null
     }
 }

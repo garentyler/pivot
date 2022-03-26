@@ -1,0 +1,13 @@
+PrimaryExpression = Identifier | Literal
+GroupedExpression = PrimaryExpression | `(` Expression `)`
+
+UnaryOperator =  `-` | `!`
+UnaryExpression = GroupedExpression | UnaryOperator UnaryExpression
+
+MultiplyOperator = `*` | `/`
+MultiplyExpression = UnaryExpression | MultiplyExpression MultiplyOperator UnaryExpression
+
+AddOperator = `+` | `-`
+AddExpression = MultiplyExpression | AddExpression AddOperator MultiplyExpression
+
+Expression = AddExpression

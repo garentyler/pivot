@@ -1,4 +1,1 @@
-import log 1 0;
-function main() {
-  log(3);
-}
+"a" + "b"

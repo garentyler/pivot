@@ -11,4 +11,4 @@ repository = "https://github.com/garentyler/pivot"
 ron = "0.6.2"
 serde = "1.0.117"
 wat = "1.0.29"
-nyst = "*"
+nyst = { path = "../nyst" }
