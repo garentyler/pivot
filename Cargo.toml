@@ -1,14 +1,8 @@
 [package]
 name = "pivot"
 version = "0.1.0"
-authors = ["Garen Tyler <garentyler@gmail.com>"]
+authors = ["Garen Tyler <garentyler@garen.dev>"]
 edition = "2018"
-description = "Pivot is a new programming language built with Rust by Garen Tyler. Pivot is currently in the alpha stage of development."
+description = "Pivot is a new programming language built with Rust. Pivot is currently in the alpha stage of development."
 license = "MIT"
 repository = "https://github.com/garentyler/pivot"
-
-[dependencies]
-ron = "0.6.2"
-serde = "1.0.117"
-wat = "1.0.29"
-nyst = { path = "../nyst" }

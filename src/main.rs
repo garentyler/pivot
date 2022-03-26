@@ -1,13 +1,10 @@
-use std::fs::File;
-use std::io::prelude::*;
+use std::{fs::File, io::Write};
 
 fn main() -> std::io::Result<()> {
     // Read the source from a file.
     let source = std::fs::read_to_string("test.pvt").unwrap();
-    // Compile it
-    let _value = pivot::parse::run(&source);
-    // let binary = pivot::compile(&source);
+    let code = pivot::compile(&source).unwrap();
     // Write it to a file.
-    // File::create("out.wasm")?.write_all(&binary)?;
+    File::create("out.bf")?.write_all(code.as_bytes())?;
     Ok(())
 }

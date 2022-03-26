@@ -1,190 +1,4 @@
-#[derive(Clone, PartialEq, Debug)]
-pub enum Token {
-    Integer(i64),
-    Float(f64),
-    String(String),
-    Boolean(bool),
-    Identifier(String),
-    Keyword(String),
-    Comma,
-    Plus,
-    Minus,
-    Star,
-    Slash,
-    Bang,
-    Equals,
-    Semicolon,
-    Quote(char),
-    Parenthesis { closing: bool },
-    Whitespace(String),
-    Unknown,
-}
-
-#[derive(Debug)]
-pub enum InterpreterError {
-    /// Error parsing source
-    ParseError(String),
-    /// Unexpected token
-    UnexpectedToken,
-    /// Mismatched types
-    MismatchedTypes,
-    /// Type error
-    TypeError,
-    /// Unexpected EOF
-    UnexpectedEOF,
-    /// Expected value
-    ExpectedValue,
-}
-impl<T> From<Option<T>> for InterpreterError {
-    fn from(value: Option<T>) -> InterpreterError {
-        InterpreterError::ExpectedValue
-    }
-}
-
-pub fn tokenize(source: &str) -> Result<Vec<Token>, InterpreterError> {
-    fn tokenize_number(chars: &[char]) -> Result<(Token, usize), ()> {
-        let mut current_value = String::new();
-        let mut chars_consumed = 0;
-        for c in chars {
-            if !c.is_digit(10) && *c != '.' {
-                break;
-            }
-            current_value.push(*c);
-            chars_consumed += 1;
-        }
-        if chars_consumed == 0 {
-            Err(())
-        } else if current_value.contains(".") {
-            Ok((
-                Token::Float(current_value.parse::<f64>().unwrap()),
-                chars_consumed,
-            ))
-        } else {
-            Ok((
-                Token::Integer(current_value.parse::<i64>().unwrap()),
-                chars_consumed,
-            ))
-        }
-    }
-    fn tokenize_identifier(chars: &[char]) -> Result<(Token, usize), ()> {
-        let mut current_value = String::new();
-        let mut chars_consumed = 0;
-        if chars[chars_consumed].is_alphabetic() {
-            current_value.push(chars[chars_consumed]);
-        } else {
-            return Err(());
-        }
-        chars_consumed += 1;
-        while chars_consumed < chars.len()
-            && (chars[chars_consumed].is_alphanumeric() || chars[chars_consumed] == '_')
-        {
-            current_value.push(chars[chars_consumed]);
-            chars_consumed += 1;
-        }
-        match &current_value[..] {
-            "true" => Ok((Token::Boolean(true), 4)),
-            "false" => Ok((Token::Boolean(false), 5)),
-            "let" => Ok((Token::Keyword(current_value), chars_consumed)),
-            _ => Ok((Token::Identifier(current_value), chars_consumed)),
-        }
-    }
-    fn tokenize_string(chars: &[char]) -> Result<(Token, usize), ()> {
-        let start_quote;
-        let mut current_value = String::new();
-        let mut chars_consumed = 0;
-        fn is_quote(c: char) -> bool {
-            match c {
-                '\'' | '"' | '`' => true,
-                _ => false,
-            }
-        }
-        if is_quote(chars[chars_consumed]) {
-            start_quote = chars[chars_consumed];
-        } else {
-            return Err(());
-        }
-        chars_consumed += 1;
-        while chars_consumed < chars.len() && chars[chars_consumed] != start_quote {
-            current_value.push(chars[chars_consumed]);
-            chars_consumed += 1;
-        }
-        chars_consumed += 1;
-        Ok((Token::String(current_value), chars_consumed))
-    }
-    fn tokenize_whitespace(chars: &[char]) -> Result<(Token, usize), ()> {
-        let mut current_value = String::new();
-        let mut chars_consumed = 0;
-        for c in chars {
-            if !c.is_whitespace() {
-                break;
-            }
-            chars_consumed += 1;
-            current_value.push(*c);
-        }
-        if chars_consumed == 0 {
-            Err(())
-        } else {
-            Ok((Token::Whitespace(current_value), chars_consumed))
-        }
-    }
-    fn tokenize_operator(chars: &[char]) -> Result<(Token, usize), ()> {
-        if chars.is_empty() {
-            Err(())
-        } else if chars[0] == '+' {
-            Ok((Token::Plus, 1))
-        } else if chars[0] == '-' {
-            Ok((Token::Minus, 1))
-        } else if chars[0] == '*' {
-            Ok((Token::Star, 1))
-        } else if chars[0] == '/' {
-            Ok((Token::Slash, 1))
-        } else if chars[0] == '!' {
-            Ok((Token::Bang, 1))
-        } else if chars[0] == '=' {
-            Ok((Token::Equals, 1))
-        } else {
-            Err(())
-        }
-    }
-
-    let source = source.chars().collect::<Vec<char>>();
-    let mut tokens = vec![];
-    let mut index = 0;
-    while index < source.len() {
-        if let Ok((_whitespace, chars_consumed)) = tokenize_whitespace(&source[index..]) {
-            // Ignore whitespace
-            index += chars_consumed;
-        } else if let Ok((num, chars_consumed)) = tokenize_number(&source[index..]) {
-            tokens.push(num);
-            index += chars_consumed;
-        } else if let Ok((num, chars_consumed)) = tokenize_string(&source[index..]) {
-            tokens.push(num);
-            index += chars_consumed;
-        } else if let Ok((num, chars_consumed)) = tokenize_identifier(&source[index..]) {
-            tokens.push(num);
-            index += chars_consumed;
-        } else if let Ok((operator, chars_consumed)) = tokenize_operator(&source[index..]) {
-            tokens.push(operator);
-            index += chars_consumed;
-        } else if source[index] == ',' {
-            tokens.push(Token::Comma);
-            index += 1;
-        } else if source[index] == ';' {
-            tokens.push(Token::Semicolon);
-            index += 1;
-        } else if source[index] == '(' {
-            tokens.push(Token::Parenthesis { closing: false });
-            index += 1;
-        } else if source[index] == ')' {
-            tokens.push(Token::Parenthesis { closing: true });
-            index += 1;
-        } else {
-            // Skip if things fail
-            index += 1;
-        }
-    }
-    Ok(tokens)
-}
+use crate::{tokenize::Token, InterpreterError};
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum AstPrimitive {
@@ -192,9 +6,9 @@ pub enum AstPrimitive {
     Float(f64),
     String(String),
     Boolean(bool),
-    Identifier(String),
     Null,
 }
+#[allow(clippy::derive_hash_xor_eq)]
 impl std::hash::Hash for AstPrimitive {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         match self {
@@ -203,10 +17,23 @@ impl std::hash::Hash for AstPrimitive {
         }
     }
 }
+impl std::fmt::Display for AstPrimitive {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        use AstPrimitive::*;
+        match self {
+            Integer(n) => write!(f, "{}", n),
+            Float(n) => write!(f, "{}", n),
+            String(s) => write!(f, "{}", s),
+            Boolean(b) => write!(f, "{}", b),
+            Null => write!(f, "null"),
+        }
+    }
+}
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum AstNode {
     Primitive(AstPrimitive),
+    Identifier(String),
     Negate {
         body: Box<AstNode>,
     },
@@ -233,6 +60,10 @@ pub enum AstNode {
         left: Box<AstNode>,
         right: Box<AstNode>,
     },
+    FunctionCall {
+        identifier: String,
+        arguments: Vec<AstNode>,
+    },
     Program {
         statements: Vec<AstNode>,
     },
@@ -240,6 +71,62 @@ pub enum AstNode {
 }
 
 pub fn parse(tokens: &[Token]) -> Result<AstNode, InterpreterError> {
+    fn parse_function_call(tokens: &[Token]) -> Result<(AstNode, usize), InterpreterError> {
+        let mut index = 0;
+        let identifier;
+        if let Token::Identifier(id) = tokens[index].clone() {
+            identifier = id;
+            index += 1;
+        } else {
+            return Err(InterpreterError::UnexpectedToken);
+        }
+        if !matches!(tokens[index], Token::Parenthesis { closing: false }) {
+            return Ok((AstNode::Identifier(identifier), 1));
+        } else {
+            index += 1;
+        }
+        // Check if it closes right away.
+        if matches!(tokens[index], Token::Parenthesis { closing: true }) {
+            index += 1;
+            return Ok((
+                AstNode::FunctionCall {
+                    identifier,
+                    arguments: vec![],
+                },
+                index,
+            ));
+        }
+
+        let mut arguments = vec![];
+        if let Ok((argument, tokens_consumed)) = parse_expression(&tokens[index..]) {
+            arguments.push(argument);
+            index += tokens_consumed;
+        }
+        while index + 2 < tokens.len() {
+            if tokens[index] != Token::Comma {
+                break;
+            }
+            index += 1;
+            if let Ok((argument, tokens_consumed)) = parse_expression(&tokens[index..]) {
+                arguments.push(argument);
+                index += tokens_consumed;
+            } else {
+                break;
+            }
+        }
+        if matches!(tokens[index], Token::Parenthesis { closing: true }) {
+            index += 1;
+            Ok((
+                AstNode::FunctionCall {
+                    identifier,
+                    arguments,
+                },
+                index,
+            ))
+        } else {
+            Err(InterpreterError::UnexpectedToken)
+        }
+    }
     fn parse_primary_expression(tokens: &[Token]) -> Result<(AstNode, usize), InterpreterError> {
         if tokens.is_empty() {
             Err(InterpreterError::UnexpectedEOF)
@@ -251,8 +138,8 @@ pub fn parse(tokens: &[Token]) -> Result<AstNode, InterpreterError> {
             Ok((AstNode::Primitive(AstPrimitive::Boolean(*n)), 1))
         } else if let Token::String(s) = &tokens[0] {
             Ok((AstNode::Primitive(AstPrimitive::String(s.clone())), 1))
-        } else if let Token::Identifier(s) = &tokens[0] {
-            Ok((AstNode::Primitive(AstPrimitive::Identifier(s.clone())), 1))
+        } else if let Token::Identifier(_) = &tokens[0] {
+            parse_function_call(tokens)
         } else if tokens[0] == Token::Keyword("let".to_owned()) {
             if tokens.len() < 2 {
                 Err(InterpreterError::UnexpectedEOF)
@@ -294,7 +181,7 @@ pub fn parse(tokens: &[Token]) -> Result<AstNode, InterpreterError> {
     fn parse_unary_expression(tokens: &[Token]) -> Result<(AstNode, usize), InterpreterError> {
         let mut index = 0;
         if tokens[index] != Token::Minus && tokens[index] != Token::Bang {
-            return parse_grouped_expression(&tokens[index..]);
+            parse_grouped_expression(&tokens[index..])
         } else {
             let operation = tokens[index].clone();
             index += 1;
@@ -396,180 +283,9 @@ pub fn parse(tokens: &[Token]) -> Result<AstNode, InterpreterError> {
         if index >= tokens.len() {
             break;
         }
-        let statement = parse_expression(&tokens[index..]);
-        if let Ok((statement, tokens_consumed)) = statement {
-            statements.push(statement);
-            index += tokens_consumed;
-        } else {
-            break;
-        }
+        let (statement, tokens_consumed) = parse_expression(&tokens[index..])?;
+        statements.push(statement);
+        index += tokens_consumed;
     }
     Ok(AstNode::Program { statements })
-}
-pub fn interpret(ast: &AstNode) -> Result<(), InterpreterError> {
-    use std::{collections::HashMap, mem::discriminant};
-    use AstNode::*;
-    let mut vars: HashMap<String, Option<AstPrimitive>> = HashMap::new();
-    if let Program { statements } = ast {
-        for statement in statements {
-            let _ = interpret_statement(statement, &mut vars)?;
-        }
-    }
-    fn interpret_statement(
-        ast: &AstNode,
-        vars: &mut HashMap<String, Option<AstPrimitive>>,
-    ) -> Result<Option<AstPrimitive>, InterpreterError> {
-        match ast {
-            Primitive(p) => {
-                if let AstPrimitive::Identifier(id) = p {
-                    if let Some(val) = vars.get(id) {
-                        if let Some(val) = val {
-                            Ok(Some(val.clone()))
-                        } else {
-                            Err(InterpreterError::ParseError(
-                                "Variable used before definition".to_owned(),
-                            ))
-                        }
-                    } else {
-                        Err(InterpreterError::ParseError(
-                            "Variable used before declaration".to_owned(),
-                        ))
-                    }
-                } else {
-                    Ok(Some(p.clone()))
-                }
-            }
-            Negate { body } => {
-                if let Some(AstPrimitive::Integer(body)) = interpret_statement(body, vars)? {
-                    Ok(Some(AstPrimitive::Integer(body * -1)))
-                } else if let Some(AstPrimitive::Boolean(body)) = interpret_statement(body, vars)? {
-                    Ok(Some(AstPrimitive::Boolean(!body)))
-                } else {
-                    Err(InterpreterError::TypeError)
-                }
-            }
-            Declare { identifier } => {
-                vars.insert(identifier.clone(), None);
-                Ok(None)
-            }
-            Assign { left, right } => {
-                if let AstNode::Declare { identifier } = Box::leak(left.clone()) {
-                    let _ = interpret(left)?;
-                    let value = interpret_statement(right, vars)?;
-                    vars.insert(identifier.clone(), value);
-                    Ok(Some(vars.get(identifier).unwrap().clone().unwrap().clone()))
-                } else if let AstNode::Primitive(AstPrimitive::Identifier(id)) =
-                    Box::leak(left.clone())
-                {
-                    let id = id.clone();
-                    let value = interpret_statement(right, vars)?;
-                    vars.insert(id.clone(), value);
-                    Ok(Some(vars.get(&id).unwrap().clone().unwrap().clone()))
-                } else {
-                    Err(InterpreterError::TypeError)
-                }
-            }
-            Add { left, right } => {
-                let left =
-                    interpret_statement(left, vars)?.ok_or(InterpreterError::ExpectedValue)?;
-                let right =
-                    interpret_statement(right, vars)?.ok_or(InterpreterError::ExpectedValue)?;
-                if discriminant(&left) != discriminant(&right) {
-                    Err(InterpreterError::MismatchedTypes)
-                } else {
-                    if let AstPrimitive::Integer(left) = left {
-                        if let AstPrimitive::Integer(right) = right {
-                            return Ok(Some(AstPrimitive::Integer(left + right)));
-                        }
-                    }
-                    if let AstPrimitive::Float(left) = left {
-                        if let AstPrimitive::Float(right) = right {
-                            return Ok(Some(AstPrimitive::Float(left + right)));
-                        }
-                    }
-                    if let AstPrimitive::String(left) = left {
-                        if let AstPrimitive::String(right) = right {
-                            return Ok(Some(AstPrimitive::String(format!("{}{}", left, right))));
-                        }
-                    }
-                    Err(InterpreterError::TypeError)
-                }
-            }
-            Subtract { left, right } => {
-                let left =
-                    interpret_statement(left, vars)?.ok_or(InterpreterError::ExpectedValue)?;
-                let right =
-                    interpret_statement(right, vars)?.ok_or(InterpreterError::ExpectedValue)?;
-                if discriminant(&left) != discriminant(&right) {
-                    Err(InterpreterError::MismatchedTypes)
-                } else {
-                    if let AstPrimitive::Integer(left) = left {
-                        if let AstPrimitive::Integer(right) = right {
-                            return Ok(Some(AstPrimitive::Integer(left - right)));
-                        }
-                    }
-                    if let AstPrimitive::Float(left) = left {
-                        if let AstPrimitive::Float(right) = right {
-                            return Ok(Some(AstPrimitive::Float(left - right)));
-                        }
-                    }
-                    Err(InterpreterError::TypeError)
-                }
-            }
-            Multiply { left, right } => {
-                let left =
-                    interpret_statement(left, vars)?.ok_or(InterpreterError::ExpectedValue)?;
-                let right =
-                    interpret_statement(right, vars)?.ok_or(InterpreterError::ExpectedValue)?;
-                if discriminant(&left) != discriminant(&right) {
-                    Err(InterpreterError::MismatchedTypes)
-                } else {
-                    if let AstPrimitive::Integer(left) = left {
-                        if let AstPrimitive::Integer(right) = right {
-                            return Ok(Some(AstPrimitive::Integer(left * right)));
-                        }
-                    }
-                    if let AstPrimitive::Float(left) = left {
-                        if let AstPrimitive::Float(right) = right {
-                            return Ok(Some(AstPrimitive::Float(left * right)));
-                        }
-                    }
-                    Err(InterpreterError::TypeError)
-                }
-            }
-            Divide { left, right } => {
-                let left =
-                    interpret_statement(left, vars)?.ok_or(InterpreterError::ExpectedValue)?;
-                let right =
-                    interpret_statement(right, vars)?.ok_or(InterpreterError::ExpectedValue)?;
-                if discriminant(&left) != discriminant(&right) {
-                    Err(InterpreterError::MismatchedTypes)
-                } else {
-                    if let AstPrimitive::Integer(left) = left {
-                        if let AstPrimitive::Integer(right) = right {
-                            return Ok(Some(AstPrimitive::Integer(left / right)));
-                        }
-                    }
-                    if let AstPrimitive::Float(left) = left {
-                        if let AstPrimitive::Float(right) = right {
-                            return Ok(Some(AstPrimitive::Float(left / right)));
-                        }
-                    }
-                    Err(InterpreterError::TypeError)
-                }
-            }
-            _ => Err(InterpreterError::TypeError),
-        }
-    }
-    Ok(())
-}
-pub fn run(source: &str) -> Result<(), InterpreterError> {
-    println!("source: {:?}", source);
-    let tokens = tokenize(source);
-    println!("tokens: {:?}", tokens);
-    let ast = parse(&tokens?);
-    println!("ast: {:?}", ast);
-    let value = interpret(&ast?);
-    println!("value: {:?}", value);
-    Ok(())
 }

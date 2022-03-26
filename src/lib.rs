@@ -1,19 +1,32 @@
-pub mod ast;
-// pub mod codegen;
+pub mod codegen;
 pub mod parse;
+pub mod tokenize;
 
-// use codegen::{SymbolGenerator, Wasm};
-
-pub fn compile(source: &str) -> Vec<u8> {
-    wat::parse_str(compile_wat(source)).unwrap()
+#[derive(Debug)]
+pub enum InterpreterError {
+    /// Error parsing source
+    ParseError(String),
+    /// Unexpected token
+    UnexpectedToken,
+    /// Mismatched types
+    MismatchedTypes,
+    /// Type error
+    TypeError,
+    /// Unexpected EOF
+    UnexpectedEOF,
+    /// Expected value
+    ExpectedValue,
+    /// Unimplemented
+    Unimplemented,
+}
+impl<T> From<Option<T>> for InterpreterError {
+    fn from(_value: Option<T>) -> InterpreterError {
+        InterpreterError::ExpectedValue
+    }
 }
 
-pub fn compile_wat(source: &str) -> String {
-    // let mut s = SymbolGenerator::new();
-    let ast = parse::run(source);
-    // println!("{:?}", ast);
-    unimplemented!()
-    // let wasm = ast.emit(&mut s);
-    // println!("{}", wasm);
-    // wasm
+pub fn compile(source: &str) -> Result<String, InterpreterError> {
+    let tokens = tokenize::tokenize(source);
+    let ast = parse::parse(&tokens?);
+    codegen::codegen(&ast?)
 }

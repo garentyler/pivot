@@ -1,2 +1,1 @@
-let asdf = 4
-asdf + 1
+log("Hello world!")
