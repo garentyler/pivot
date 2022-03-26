@@ -10,7 +10,7 @@ pub fn compile(source: &str) -> Vec<u8> {
 
 pub fn compile_wat(source: &str) -> String {
     // let mut s = SymbolGenerator::new();
-    let ast = parse::interpret(source);
+    let ast = parse::run(source);
     // println!("{:?}", ast);
     unimplemented!()
     // let wasm = ast.emit(&mut s);

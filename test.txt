@@ -10,4 +10,6 @@ MultiplyExpression = UnaryExpression | MultiplyExpression MultiplyOperator Unary
 AddOperator = `+` | `-`
 AddExpression = MultiplyExpression | AddExpression AddOperator MultiplyExpression
 
-Expression = AddExpression
+AssignExpression = AddExpression | Identifier `=` AddExpression
+
+Expression = AssignExpression
